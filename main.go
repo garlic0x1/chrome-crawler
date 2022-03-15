@@ -46,6 +46,20 @@ var (
 	seededRand   *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
+func absoluteURL(protocol string, host string, u string) string {
+	if len(u) > 8 {
+		if u[:7] == "https://" {
+			return u
+		} else {
+			return protocol + "://" + host + "/" + u
+		}
+	} else {
+		return protocol + "://" + host + "/" + u
+	}
+
+	return ""
+}
+
 func crawl(l link, queue chan link) {
 	// create context
 	ctx, cancel := chromedp.NewContext(context.Background())
@@ -56,8 +70,8 @@ func crawl(l link, queue chan link) {
 	if err != nil {
 		log.Println("failed to parse url", l.URL, err)
 	}
+	protocol := parsed.Scheme
 	host := parsed.Host
-	log.Println(l.URL)
 
 	// run task list
 	var hrefs []*cdp.Node
@@ -68,13 +82,13 @@ func crawl(l link, queue chan link) {
 		chromedp.Nodes("form", &forms),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err, l.URL)
 	}
 
 	for _, href := range hrefs {
 		if href.AttributeValue("href") != "" {
 			l := link{
-				URL:   "https://" + host + "/" + href.AttributeValue("href"),
+				URL:   absoluteURL(protocol, host, href.AttributeValue("href")),
 				Level: l.Level + 1,
 			}
 			log.Println("from crawl func", l.Level, l.URL)
@@ -103,7 +117,9 @@ func main() {
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
 	for l := range queue {
-		fmt.Println("crawl(" + l.URL + ", cxt, queue)")
-		go crawl(l, queue)
+		if l.Level < DEPTH {
+			fmt.Println("crawl(" + l.URL + ", cxt, queue)")
+			go crawl(l, queue)
+		}
 	}
 }
