@@ -7,24 +7,63 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
 )
 
-func crawl(u string, ctx context.Context, queue chan string) {
-	parsed, err := url.Parse(u)
+type link struct {
+	URL   string
+	Level int
+}
+
+type input struct {
+	Type  string
+	Name  string
+	Value string
+}
+
+type form struct {
+	Method string
+	Action string
+	Inputs []input
+	Level  int
+}
+
+type injection struct {
+	Hash         string
+	FormLocation string
+}
+
+// Globals
+var (
+	DEPTH        = 2
+	injectionMap []injection
+	seededRand   *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+)
+
+func crawl(l link, queue chan link) {
+	// create context
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	// parse link
+	parsed, err := url.Parse(l.URL)
 	if err != nil {
-		log.Println("failed to parse url", u, err)
+		log.Println("failed to parse url", l.URL, err)
 	}
 	host := parsed.Host
+	log.Println(l.URL)
+
 	// run task list
 	var hrefs []*cdp.Node
 	var forms []*cdp.Node
 	err = chromedp.Run(ctx,
-		chromedp.Navigate(u),
+		chromedp.Navigate(l.URL),
 		chromedp.Nodes("a", &hrefs),
 		chromedp.Nodes("form", &forms),
 	)
@@ -34,32 +73,37 @@ func crawl(u string, ctx context.Context, queue chan string) {
 
 	for _, href := range hrefs {
 		if href.AttributeValue("href") != "" {
-			link := "https://" + host + href.AttributeValue("href")
-			log.Println("from crawl func", link)
-			queue <- link
+			l := link{
+				URL:   "https://" + host + "/" + href.AttributeValue("href"),
+				Level: l.Level + 1,
+			}
+			log.Println("from crawl func", l.Level, l.URL)
+			queue <- l
 		}
 	}
 
-	for _, form := range forms {
-		if form.AttributeValue("action") != "" {
-			log.Println("form", form.AttributeValue("action"))
+	for _, f := range forms {
+		if f.AttributeValue("action") != "" {
+			log.Println("form", f.AttributeValue("action"))
 		}
 	}
 }
 
 func main() {
-	// create context
-	ctx, cancel := chromedp.NewContext(context.Background())
-	defer cancel()
 
-	queue := make(chan string)
+	queue := make(chan link, 4)
 
-	go crawl("https://garlic0x1.com", ctx, queue)
+	startlink := link{
+		URL:   "https://garlic0x1.com",
+		Level: 0,
+	}
+
+	go crawl(startlink, queue)
 
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
-	for link := range queue {
-		fmt.Println(link)
-		go crawl(link, ctx, queue)
+	for l := range queue {
+		fmt.Println("crawl(" + l.URL + ", cxt, queue)")
+		go crawl(l, queue)
 	}
 }
