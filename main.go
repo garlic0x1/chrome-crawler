@@ -48,16 +48,14 @@ var (
 
 func absoluteURL(protocol string, host string, u string) string {
 	if len(u) > 8 {
-		if u[:7] == "https://" {
+		if u[:8] == "https://" || u[:7] == "http://" {
 			return u
-		} else {
-			return protocol + "://" + host + "/" + u
 		}
-	} else {
-		return protocol + "://" + host + "/" + u
+	} else if u[0] == '/' {
+		return protocol + "://" + host + u
 	}
+	return protocol + "://" + host + "/" + u
 
-	return ""
 }
 
 func crawl(l link, queue chan link) {
@@ -87,12 +85,15 @@ func crawl(l link, queue chan link) {
 
 	for _, href := range hrefs {
 		if href.AttributeValue("href") != "" {
+			log.Println("link", href.AttributeValue("href"))
 			l := link{
 				URL:   absoluteURL(protocol, host, href.AttributeValue("href")),
 				Level: l.Level + 1,
 			}
-			log.Println("from crawl func", l.Level, l.URL)
-			queue <- l
+
+			if l.Level < DEPTH {
+				queue <- l
+			}
 		}
 	}
 
@@ -117,9 +118,7 @@ func main() {
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
 	for l := range queue {
-		if l.Level < DEPTH {
-			fmt.Println("crawl(" + l.URL + ", cxt, queue)")
-			go crawl(l, queue)
-		}
+		fmt.Fprintln(w, l.URL)
+		go crawl(l, queue)
 	}
 }
