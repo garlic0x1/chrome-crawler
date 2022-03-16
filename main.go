@@ -100,12 +100,12 @@ func crawl(l link, passctx context.Context, sem chan struct{}, timeout time.Dura
 				case sem <- struct{}{}:
 					wg.Add(1)
 					go func() {
-						crawl(l, ctx, sem, timeout)
+						crawl(ret, ctx, sem, timeout)
 						<-sem
 						wg.Done()
 					}()
 				default:
-					crawl(l, ctx, sem, timeout)
+					crawl(ret, ctx, sem, timeout)
 				}
 			}
 		}
@@ -134,7 +134,7 @@ func main() {
 	//unique := flag.Bool("unique", false, "Show only unique urls")
 	u := flag.String("url", "", "URL to crawl")
 	flag.Parse()
-	DEPTH = *depth
+	DEPTH = *depth + 1
 
 	if *u == "" {
 		fmt.Println("Please provide a url with -url")
@@ -153,7 +153,7 @@ func main() {
 	defer cancel()
 
 	startlink := link{
-		URL:   "https://www.tiktok.com",
+		URL:   *u,
 		Level: 0,
 	}
 
