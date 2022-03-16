@@ -58,13 +58,9 @@ func absoluteURL(protocol string, host string, u string) string {
 	//log.Println("protocol:", protocol, "host:", host, "u:", u, "u[:1]:", u[:1])
 }
 
-func crawl(l link, timeout time.Duration) {
-	// create context
-	ctxbase, cancel := chromedp.NewContext(context.Background())
-
-	ctx, cancel := context.WithTimeout(ctxbase, timeout*time.Second)
+func crawl(l link, passctx context.Context, timeout time.Duration) {
+	ctx, cancel := chromedp.NewContext(passctx)
 	defer cancel()
-
 	// parse link
 	parsed, err := url.Parse(l.URL)
 	if err != nil {
@@ -96,7 +92,10 @@ func crawl(l link, timeout time.Duration) {
 
 			if ret.Level < DEPTH {
 				wg.Add(1)
-				go crawl(l, timeout)
+				go func() {
+					crawl(l, ctx, timeout)
+					wg.Done()
+				}()
 			}
 		}
 	}
@@ -111,14 +110,19 @@ func crawl(l link, timeout time.Duration) {
 
 func main() {
 
-	//queue := make(chan link, 4)
-
 	timeout := time.Duration(5)
+	//queue := make(chan link, 4)
+	// create context
+	ctxbase, cancel := chromedp.NewContext(context.Background())
+
+	ctx, cancel := context.WithTimeout(ctxbase, timeout*time.Second)
+	defer cancel()
+
 	startlink := link{
 		URL:   "https://www.tiktok.com",
 		Level: 0,
 	}
 
-	crawl(startlink, timeout)
+	crawl(startlink, ctx, timeout)
 
 }
