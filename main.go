@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
@@ -61,7 +62,7 @@ func absoluteURL(protocol string, host string, u string) string {
 	//log.Println("protocol:", protocol, "host:", host, "u:", u, "u[:1]:", u[:1])
 }
 
-func crawl(l link, passctx context.Context, sem chan struct{}, timeout time.Duration) {
+func crawl(l link, passctx context.Context, results chan string, sem chan struct{}, timeout time.Duration) {
 	ctx, cancel := chromedp.NewContext(passctx)
 	defer cancel()
 	// parse link
@@ -91,21 +92,19 @@ func crawl(l link, passctx context.Context, sem chan struct{}, timeout time.Dura
 				URL:   absoluteURL(protocol, host, href.AttributeValue("href")),
 				Level: l.Level + 1,
 			}
-			if isUnique(ret.URL) {
-				fmt.Println("link", ret.URL)
-			}
+			results <- "[href] " + ret.URL
 
 			if ret.Level < DEPTH {
 				select {
 				case sem <- struct{}{}:
 					wg.Add(1)
 					go func() {
-						crawl(ret, ctx, sem, timeout)
+						crawl(ret, ctx, results, sem, timeout)
 						<-sem
 						wg.Done()
 					}()
 				default:
-					crawl(ret, ctx, sem, timeout)
+					crawl(ret, ctx, results, sem, timeout)
 				}
 			}
 		}
@@ -114,6 +113,7 @@ func crawl(l link, passctx context.Context, sem chan struct{}, timeout time.Dura
 	for _, f := range forms {
 		if f.AttributeValue("action") != "" {
 			//log.Println("form", f.AttributeValue("action"))
+			results <- "[form] " + absoluteURL(protocol, host, f.AttributeValue("action"))
 		}
 	}
 	wg.Wait()
@@ -131,7 +131,7 @@ func isUnique(url string) bool {
 func main() {
 	threads := flag.Int("tabs", 8, "Number of chrome tabs to use concurrently")
 	depth := flag.Int("depth", 2, "Depth to crawl")
-	//unique := flag.Bool("unique", false, "Show only unique urls")
+	unique := flag.Bool("unique", false, "Show only unique urls")
 	u := flag.String("url", "", "URL to crawl")
 	flag.Parse()
 	DEPTH = *depth + 1
@@ -145,6 +145,8 @@ func main() {
 	//queue := make(chan link, 4)
 	// set up concurrency limit
 	sem := make(chan struct{}, *threads)
+	// results channel
+	results := make(chan string)
 
 	// create context
 	ctxbase, cancel := chromedp.NewContext(context.Background())
@@ -157,6 +159,22 @@ func main() {
 		Level: 0,
 	}
 
-	crawl(startlink, ctx, sem, timeout)
+	go func() {
+		crawl(startlink, ctx, results, sem, timeout)
+		close(results)
+	}()
+
+	w := bufio.NewWriter(os.Stdout)
+	defer w.Flush()
+	if *unique {
+		for res := range results {
+			if isUnique(res) {
+				fmt.Fprintln(w, res)
+			}
+		}
+	}
+	for res := range results {
+		fmt.Fprintln(w, res)
+	}
 
 }
