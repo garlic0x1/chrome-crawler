@@ -135,6 +135,7 @@ func isUnique(u string) bool {
 
 func main() {
 	threads := flag.Int("tabs", 8, "Number of chrome tabs to use concurrently")
+	timeoutarg := flag.Int("timeout", 10, "Timeout in seconds")
 	depth := flag.Int("depth", 2, "Depth to crawl")
 	unique := flag.Bool("unique", false, "Show only unique urls")
 	u := flag.String("url", "", "URL to crawl")
@@ -152,7 +153,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	timeout := time.Duration(10)
+	timeout := time.Duration(*timeoutarg)
 	//queue := make(chan link, 4)
 	// set up concurrency limit
 	sem := make(chan struct{}, *threads)
