@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
 	"net/url"
+	"os"
 	"sync"
 	"time"
 
@@ -38,7 +40,8 @@ type injection struct {
 
 // Globals
 var (
-	DEPTH        = 2
+	sm           sync.Map
+	DEPTH        int
 	injectionMap []injection
 	seededRand   *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
@@ -88,7 +91,9 @@ func crawl(l link, passctx context.Context, sem chan struct{}, timeout time.Dura
 				URL:   absoluteURL(protocol, host, href.AttributeValue("href")),
 				Level: l.Level + 1,
 			}
-			fmt.Println("link", ret.URL)
+			if isUnique(ret.URL) {
+				fmt.Println("link", ret.URL)
+			}
 
 			if ret.Level < DEPTH {
 				select {
@@ -114,12 +119,32 @@ func crawl(l link, passctx context.Context, sem chan struct{}, timeout time.Dura
 	wg.Wait()
 }
 
+func isUnique(url string) bool {
+	_, present := sm.Load(url)
+	if present {
+		return false
+	}
+	sm.Store(url, true)
+	return true
+}
+
 func main() {
+	threads := flag.Int("tabs", 8, "Number of chrome tabs to use concurrently")
+	depth := flag.Int("depth", 2, "Depth to crawl")
+	//unique := flag.Bool("unique", false, "Show only unique urls")
+	u := flag.String("url", "", "URL to crawl")
+	flag.Parse()
+	DEPTH = *depth
+
+	if *u == "" {
+		fmt.Println("Please provide a url with -url")
+		os.Exit(0)
+	}
 
 	timeout := time.Duration(10)
 	//queue := make(chan link, 4)
 	// set up concurrency limit
-	sem := make(chan struct{}, 4)
+	sem := make(chan struct{}, *threads)
 
 	// create context
 	ctxbase, cancel := chromedp.NewContext(context.Background())
