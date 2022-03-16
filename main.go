@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -43,6 +44,7 @@ type injection struct {
 var (
 	sm           sync.Map
 	DEPTH        int
+	SCOPE        string
 	injectionMap []injection
 	seededRand   *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
@@ -94,7 +96,7 @@ func crawl(l link, passctx context.Context, results chan string, sem chan struct
 			}
 			results <- "[href] " + ret.URL
 
-			if ret.Level < DEPTH {
+			if ret.Level < DEPTH && inScope(ret.URL) {
 				select {
 				case sem <- struct{}{}:
 					wg.Add(1)
@@ -119,12 +121,15 @@ func crawl(l link, passctx context.Context, results chan string, sem chan struct
 	wg.Wait()
 }
 
-func isUnique(url string) bool {
-	_, present := sm.Load(url)
+func inScope(u string) bool {
+	return strings.Contains(u, SCOPE)
+}
+func isUnique(u string) bool {
+	_, present := sm.Load(u)
 	if present {
 		return false
 	}
-	sm.Store(url, true)
+	sm.Store(u, true)
 	return true
 }
 
@@ -135,6 +140,12 @@ func main() {
 	u := flag.String("url", "", "URL to crawl")
 	flag.Parse()
 	DEPTH = *depth + 1
+	// parse link
+	parsed, err := url.Parse(*u)
+	if err != nil {
+		log.Println("failed to parse url", *u, err)
+	}
+	SCOPE = parsed.Host
 
 	if *u == "" {
 		fmt.Println("Please provide a url with -url")
