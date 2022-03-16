@@ -58,7 +58,7 @@ func absoluteURL(protocol string, host string, u string) string {
 	//log.Println("protocol:", protocol, "host:", host, "u:", u, "u[:1]:", u[:1])
 }
 
-func crawl(l link, passctx context.Context, timeout time.Duration) {
+func crawl(l link, passctx context.Context, sem chan struct{}, timeout time.Duration) {
 	ctx, cancel := chromedp.NewContext(passctx)
 	defer cancel()
 	// parse link
@@ -78,7 +78,7 @@ func crawl(l link, passctx context.Context, timeout time.Duration) {
 		chromedp.Nodes("form", &forms),
 	)
 	if err != nil {
-		log.Println(err, l.URL)
+		//log.Println(err, l.URL)
 	}
 
 	var wg sync.WaitGroup
@@ -91,11 +91,17 @@ func crawl(l link, passctx context.Context, timeout time.Duration) {
 			fmt.Println("link", ret.URL)
 
 			if ret.Level < DEPTH {
-				wg.Add(1)
-				go func() {
-					crawl(l, ctx, timeout)
-					wg.Done()
-				}()
+				select {
+				case sem <- struct{}{}:
+					wg.Add(1)
+					go func() {
+						crawl(l, ctx, sem, timeout)
+						<-sem
+						wg.Done()
+					}()
+				default:
+					crawl(l, ctx, sem, timeout)
+				}
 			}
 		}
 	}
@@ -110,8 +116,11 @@ func crawl(l link, passctx context.Context, timeout time.Duration) {
 
 func main() {
 
-	timeout := time.Duration(5)
+	timeout := time.Duration(10)
 	//queue := make(chan link, 4)
+	// set up concurrency limit
+	sem := make(chan struct{}, 4)
+
 	// create context
 	ctxbase, cancel := chromedp.NewContext(context.Background())
 
@@ -123,6 +132,6 @@ func main() {
 		Level: 0,
 	}
 
-	crawl(startlink, ctx, timeout)
+	crawl(startlink, ctx, sem, timeout)
 
 }
