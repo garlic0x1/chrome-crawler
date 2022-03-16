@@ -51,11 +51,14 @@ func absoluteURL(protocol string, host string, u string) string {
 		if u[:8] == "https://" || u[:7] == "http://" {
 			return u
 		}
-	} else if u[0] == '/' {
+	}
+	if string(u[:1]) == "/" {
+
 		return protocol + "://" + host + u
 	}
 	return protocol + "://" + host + "/" + u
 
+	//log.Println("protocol:", protocol, "host:", host, "u:", u, "u[:1]:", u[:1])
 }
 
 func crawl(l link, queue chan link) {
@@ -85,21 +88,21 @@ func crawl(l link, queue chan link) {
 
 	for _, href := range hrefs {
 		if href.AttributeValue("href") != "" {
-			log.Println("link", href.AttributeValue("href"))
-			l := link{
+			//log.Println("link", href.AttributeValue("href"))
+			ret := link{
 				URL:   absoluteURL(protocol, host, href.AttributeValue("href")),
 				Level: l.Level + 1,
 			}
 
-			if l.Level < DEPTH {
-				queue <- l
+			if ret.Level < DEPTH {
+				queue <- ret
 			}
 		}
 	}
 
 	for _, f := range forms {
 		if f.AttributeValue("action") != "" {
-			log.Println("form", f.AttributeValue("action"))
+			//log.Println("form", f.AttributeValue("action"))
 		}
 	}
 }
@@ -109,7 +112,7 @@ func main() {
 	queue := make(chan link, 4)
 
 	startlink := link{
-		URL:   "https://garlic0x1.com",
+		URL:   "https://www.tiktok.com",
 		Level: 0,
 	}
 
@@ -118,7 +121,7 @@ func main() {
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
 	for l := range queue {
-		fmt.Fprintln(w, l.URL)
+		fmt.Println(l.URL)
 		go crawl(l, queue)
 	}
 }
