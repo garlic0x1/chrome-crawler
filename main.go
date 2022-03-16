@@ -1,15 +1,12 @@
-// Command eval is a chromedp example demonstrating how to evaluate javascript
-// and retrieve the result.
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"log"
 	"math/rand"
 	"net/url"
-	"os"
+	"sync"
 	"time"
 
 	"github.com/chromedp/cdproto/cdp"
@@ -61,7 +58,7 @@ func absoluteURL(protocol string, host string, u string) string {
 	//log.Println("protocol:", protocol, "host:", host, "u:", u, "u[:1]:", u[:1])
 }
 
-func crawl(l link, timeout time.Duration, queue chan link) {
+func crawl(l link, timeout time.Duration) {
 	// create context
 	ctxbase, cancel := chromedp.NewContext(context.Background())
 
@@ -88,16 +85,18 @@ func crawl(l link, timeout time.Duration, queue chan link) {
 		log.Println(err, l.URL)
 	}
 
+	var wg sync.WaitGroup
 	for _, href := range hrefs {
 		if href.AttributeValue("href") != "" {
-			//log.Println("link", href.AttributeValue("href"))
 			ret := link{
 				URL:   absoluteURL(protocol, host, href.AttributeValue("href")),
 				Level: l.Level + 1,
 			}
+			fmt.Println("link", ret.URL)
 
 			if ret.Level < DEPTH {
-				queue <- ret
+				wg.Add(1)
+				go crawl(l, timeout)
 			}
 		}
 	}
@@ -107,23 +106,19 @@ func crawl(l link, timeout time.Duration, queue chan link) {
 			//log.Println("form", f.AttributeValue("action"))
 		}
 	}
+	wg.Wait()
 }
 
 func main() {
 
-	queue := make(chan link, 4)
+	//queue := make(chan link, 4)
 
+	timeout := time.Duration(5)
 	startlink := link{
 		URL:   "https://www.tiktok.com",
 		Level: 0,
 	}
 
-	go crawl(startlink, time.Duration(10), queue)
+	crawl(startlink, timeout)
 
-	w := bufio.NewWriter(os.Stdout)
-	defer w.Flush()
-	for l := range queue {
-		fmt.Println(l.URL)
-		go crawl(l, time.Duration(10), queue)
-	}
 }
