@@ -61,9 +61,11 @@ func absoluteURL(protocol string, host string, u string) string {
 	//log.Println("protocol:", protocol, "host:", host, "u:", u, "u[:1]:", u[:1])
 }
 
-func crawl(l link, queue chan link) {
+func crawl(l link, timeout time.Duration, queue chan link) {
 	// create context
-	ctx, cancel := chromedp.NewContext(context.Background())
+	ctxbase, cancel := chromedp.NewContext(context.Background())
+
+	ctx, cancel := context.WithTimeout(ctxbase, timeout*time.Second)
 	defer cancel()
 
 	// parse link
@@ -116,12 +118,12 @@ func main() {
 		Level: 0,
 	}
 
-	go crawl(startlink, queue)
+	go crawl(startlink, time.Duration(10), queue)
 
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
 	for l := range queue {
 		fmt.Println(l.URL)
-		go crawl(l, queue)
+		go crawl(l, time.Duration(10), queue)
 	}
 }
