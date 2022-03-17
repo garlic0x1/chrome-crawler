@@ -5,13 +5,14 @@ Drives chrome headless with chromedp https://github.com/chromedp/chromedp
 ```
 $ ./chrome-crawler -h
 Usage of ./chrome-crawler:
-  -depth int
+  -d int
     	Depth to crawl (default 2)
   -r	Revisit URLs
-  -tabs int
+  -t int
     	Number of chrome tabs to use concurrently (default 8)
   -u string
     	URL to crawl
   -uniq
     	Show only unique URLs
+
 ```
