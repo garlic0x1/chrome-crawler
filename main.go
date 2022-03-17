@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/url"
 	"os"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/chromedp/chromedp"
 )
@@ -21,32 +19,12 @@ type link struct {
 	Level int
 }
 
-type input struct {
-	Type  string
-	Name  string
-	Value string
-}
-
-type form struct {
-	Method string
-	Action string
-	Inputs []input
-	Level  int
-}
-
-type injection struct {
-	Hash         string
-	FormLocation string
-}
-
 // Globals
 var (
-	sm           sync.Map
-	DEPTH        int
-	SCOPE        string
-	COUNTER      int
-	injectionMap []injection
-	seededRand   *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+	sm      sync.Map
+	DEPTH   int
+	SCOPE   string
+	COUNTER int
 )
 
 // spawns n workers listening to queue
