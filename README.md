@@ -1,9 +1,5 @@
 # chrome-crawler
 Drives chrome headless with chromedp https://github.com/chromedp/chromedp  
-
-# Installation:
-With Go installed:  
-`$ go install github.com/garlic0x1/chrome-crawler@main`  
   
 # Usage:
 ```
