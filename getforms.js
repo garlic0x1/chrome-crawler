@@ -1,4 +1,4 @@
-getLinks();
+getForms();
 
 function absolutePath(href) {
 	try {
@@ -8,7 +8,7 @@ function absolutePath(href) {
 	} catch (error) {}
 }
 
-function getLinks() {
+function getForms() {
 	var array = []
 	if (!document) return array;
 	var allElements = document.querySelectorAll("form");
