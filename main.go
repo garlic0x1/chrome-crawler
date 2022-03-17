@@ -41,34 +41,46 @@ type injection struct {
 
 // Globals
 var (
-	sm              sync.Map
-	DEPTH           int
-	SCOPE           string
-	javascriptfuncs [2]string
-	injectionMap    []injection
-	seededRand      *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+	sm           sync.Map
+	DEPTH        int
+	SCOPE        string
+	COUNTER      int
+	injectionMap []injection
+	seededRand   *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
-func crawl(l link, passctx context.Context, results chan string, sem chan struct{}) {
-	var wg sync.WaitGroup
+// spawns n workers listening to queue
+func spawnWorkers(n int, passctx context.Context, results chan string, queue chan link) {
+	for i := 0; i < n; i++ {
+		go func() {
+			log.Println("worker spawned")
 
+			// pops messages
+			for message := range queue {
+				crawl(message, passctx, results, queue)
+			}
+		}()
+	}
+}
+
+func crawl(l link, passctx context.Context, results chan string, queue chan link) {
 	// open in a new tab
 	ctx, cancel := chromedp.NewContext(passctx)
 
-	// run task list
+	// run task list and store in slices
 	var hrefs []string
 	var forms []string
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(l.URL),
-		chromedp.Evaluate(javascriptfuncs[0], &hrefs),
-		chromedp.Evaluate(javascriptfuncs[1], &forms),
+		chromedp.Evaluate(loadFile("getlinks.js"), &hrefs),
+		chromedp.Evaluate(loadFile("getforms.js"), &forms),
 	)
 	if err != nil {
 		log.Println(err, l.URL)
 		return
 	}
+	// dont leave it open longer than we need
 	cancel()
-	//fmt.Println(hrefs)
 
 	for _, href := range hrefs {
 		ret := link{
@@ -78,18 +90,9 @@ func crawl(l link, passctx context.Context, results chan string, sem chan struct
 		results <- "[href] " + ret.URL
 
 		if ret.Level < DEPTH && inScope(ret.URL) {
-			select {
-			case sem <- struct{}{}:
-				wg.Add(1)
-				go func() {
-					//log.Println("crawling", ret.URL)
-					crawl(ret, passctx, results, sem)
-					<-sem
-					wg.Done()
-				}()
-			default:
-				crawl(ret, passctx, results, sem)
-			}
+			// increment counter for every link found so we know to not stop yet
+			COUNTER++
+			queue <- ret
 		}
 	}
 
@@ -97,7 +100,9 @@ func crawl(l link, passctx context.Context, results chan string, sem chan struct
 		//log.Println("form", f.AttributeValue("action"))
 		results <- "[form] " + f
 	}
-	wg.Wait()
+
+	// decrement counter for having looked at this link AFTER counting the child links
+	COUNTER--
 }
 
 func inScope(u string) bool {
@@ -112,22 +117,18 @@ func isUnique(u string) bool {
 	return true
 }
 
-func loadFiles() {
+// load the javascript functions
+func loadFile(filename string) string {
 	// open files
-	content, err := ioutil.ReadFile("getforms.js")
+	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
-	javascriptfuncs[1] = string(content)
-	content, err = ioutil.ReadFile("getlinks.js")
-	if err != nil {
-		log.Fatal(err)
-	}
-	javascriptfuncs[0] = string(content)
+	return string(content)
 }
 
 func main() {
-	loadFiles()
+	COUNTER = 1
 	threads := flag.Int("tabs", 8, "Number of chrome tabs to use concurrently")
 	//timeoutarg := flag.Int("timeout", 10, "Timeout in seconds")
 	depth := flag.Int("depth", 2, "Depth to crawl")
@@ -148,28 +149,25 @@ func main() {
 	}
 
 	//timeout := time.Duration(*timeoutarg)
-	//queue := make(chan link, 4)
-	// set up concurrency limit
-	var wg sync.WaitGroup
-	sem := make(chan struct{}, *threads)
-	// results channel
+	queue := make(chan link)
 	results := make(chan string)
-
-	// create context
-	ctx, cancel := chromedp.NewContext(context.Background())
-
-	defer cancel()
-
+	// set up concurrency limit
+	// results channel
 	startlink := link{
 		URL:   *u,
 		Level: 0,
 	}
 
-	wg.Add(1)
+	// create context
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	// if you say "go" enough everything works out
 	go func() {
-		defer wg.Done()
-		crawl(startlink, ctx, results, sem)
-		close(results)
+		queue <- startlink
+	}()
+	go func() {
+		spawnWorkers(*threads, ctx, results, queue)
 	}()
 
 	go func() {
@@ -184,6 +182,10 @@ func main() {
 			fmt.Println(res)
 		}
 	}()
-
-	wg.Wait()
+	for {
+		if COUNTER < 1 {
+			log.Println("COUNTER:", COUNTER, "exiting")
+			os.Exit(0)
+		}
+	}
 }
