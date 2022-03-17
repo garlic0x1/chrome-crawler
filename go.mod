@@ -1,4 +1,4 @@
-module chromedp
+module github.com/garlic0x1/chrome-crawler
 
 go 1.17
 

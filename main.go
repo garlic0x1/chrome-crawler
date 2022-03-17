@@ -53,8 +53,6 @@ var (
 func spawnWorkers(n int, passctx context.Context, results chan string, queue chan link) {
 	for i := 0; i < n; i++ {
 		go func() {
-			log.Println("worker spawned")
-
 			// pops messages
 			for message := range queue {
 				crawl(message, passctx, results, queue)
@@ -92,12 +90,12 @@ func crawl(l link, passctx context.Context, results chan string, queue chan link
 		if ret.Level < DEPTH && inScope(ret.URL) {
 			// increment counter for every link found so we know to not stop yet
 			COUNTER++
+			// send back to queue to be further crawled
 			queue <- ret
 		}
 	}
 
 	for _, f := range forms {
-		//log.Println("form", f.AttributeValue("action"))
 		results <- "[form] " + f
 	}
 
@@ -119,7 +117,6 @@ func isUnique(u string) bool {
 
 // load the javascript functions
 func loadFile(filename string) string {
-	// open files
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Fatal(err)
@@ -128,15 +125,16 @@ func loadFile(filename string) string {
 }
 
 func main() {
-	COUNTER = 1
 	threads := flag.Int("tabs", 8, "Number of chrome tabs to use concurrently")
 	//timeoutarg := flag.Int("timeout", 10, "Timeout in seconds")
 	depth := flag.Int("depth", 2, "Depth to crawl")
-	unique := flag.Bool("unique", false, "Show only unique urls")
-	u := flag.String("url", "", "URL to crawl")
+	unique := flag.Bool("uniq", false, "Show only unique urls")
+	u := flag.String("u", "", "URL to crawl")
 	flag.Parse()
+
 	DEPTH = *depth
-	// parse link
+
+	// parse link to determine scope
 	parsed, err := url.Parse(*u)
 	if err != nil {
 		log.Println("failed to parse url", *u, err)
@@ -144,32 +142,27 @@ func main() {
 	SCOPE = parsed.Host
 
 	if *u == "" {
-		fmt.Println("Please provide a url with -url")
+		fmt.Println("Please provide a url with -u")
 		os.Exit(0)
 	}
 
-	//timeout := time.Duration(*timeoutarg)
-	queue := make(chan link)
-	results := make(chan string)
-	// set up concurrency limit
-	// results channel
 	startlink := link{
 		URL:   *u,
 		Level: 0,
 	}
 
+	queue := make(chan link)
+	results := make(chan string)
+	COUNTER = 1
+
 	// create context
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
 
-	// if you say "go" enough everything works out
-	go func() {
-		queue <- startlink
-	}()
-	go func() {
-		spawnWorkers(*threads, ctx, results, queue)
-	}()
+	go func() { queue <- startlink }()
+	go func() { spawnWorkers(*threads, ctx, results, queue) }()
 
+	// listen to results and output them
 	go func() {
 		if *unique {
 			for res := range results {
@@ -184,7 +177,6 @@ func main() {
 	}()
 	for {
 		if COUNTER < 1 {
-			log.Println("COUNTER:", COUNTER, "exiting")
 			os.Exit(0)
 		}
 	}
