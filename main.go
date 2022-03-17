@@ -122,8 +122,8 @@ func loadFile(filename string) string {
 }
 
 func main() {
-	threads := flag.Int("tabs", 8, "Number of chrome tabs to use concurrently")
-	depth := flag.Int("depth", 2, "Depth to crawl")
+	threads := flag.Int("t", 8, "Number of chrome tabs to use concurrently")
+	depth := flag.Int("d", 2, "Depth to crawl")
 	unique := flag.Bool("uniq", false, "Show only unique URLs")
 	revisit := flag.Bool("r", false, "Revisit URLs")
 	u := flag.String("u", "", "URL to crawl")
