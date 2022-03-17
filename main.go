@@ -22,6 +22,8 @@ type link struct {
 // Globals
 var (
 	sm      sync.Map
+	visited sync.Map
+	REVISIT bool
 	DEPTH   int
 	SCOPE   string
 	COUNTER int
@@ -65,11 +67,20 @@ func crawl(l link, passctx context.Context, results chan string, queue chan link
 		}
 		results <- "[href] " + ret.URL
 
-		if ret.Level < DEPTH && inScope(ret.URL) {
-			// increment counter for every link found so we know to not stop yet
-			COUNTER++
-			// send back to queue to be further crawled
-			queue <- ret
+		if REVISIT {
+			if ret.Level < DEPTH && inScope(ret.URL) {
+				// increment counter for every link found so we know to not stop yet
+				COUNTER++
+				// send back to queue to be further crawled
+				queue <- ret
+			}
+		} else {
+			if ret.Level < DEPTH && inScope(ret.URL) && isUniqueURL(ret.URL) {
+				// increment counter for every link found so we know to not stop yet
+				COUNTER++
+				// send back to queue to be further crawled
+				queue <- ret
+			}
 		}
 	}
 
@@ -92,6 +103,14 @@ func isUnique(u string) bool {
 	sm.Store(u, true)
 	return true
 }
+func isUniqueURL(u string) bool {
+	_, present := visited.Load(u)
+	if present {
+		return false
+	}
+	visited.Store(u, true)
+	return true
+}
 
 // load the javascript functions
 func loadFile(filename string) string {
@@ -104,13 +123,14 @@ func loadFile(filename string) string {
 
 func main() {
 	threads := flag.Int("tabs", 8, "Number of chrome tabs to use concurrently")
-	//timeoutarg := flag.Int("timeout", 10, "Timeout in seconds")
 	depth := flag.Int("depth", 2, "Depth to crawl")
-	unique := flag.Bool("uniq", false, "Show only unique urls")
+	unique := flag.Bool("uniq", false, "Show only unique URLs")
+	revisit := flag.Bool("r", false, "Revisit URLs")
 	u := flag.String("u", "", "URL to crawl")
 	flag.Parse()
 
 	DEPTH = *depth
+	REVISIT = *revisit
 
 	// parse link to determine scope
 	parsed, err := url.Parse(*u)
