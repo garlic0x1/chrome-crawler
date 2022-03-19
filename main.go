@@ -93,8 +93,7 @@ func main() {
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
 
-	go func() { queue <- startlink }()
-	go func() { spawnWorkers(*threads, ctx, results, queue) }()
+	go spawnWorkers(*threads, ctx, results, queue)
 
 	// listen to results and output them
 	go func() {
@@ -109,6 +108,9 @@ func main() {
 			fmt.Println(res)
 		}
 	}()
+
+	queue <- startlink
+
 	for {
 		if COUNTER < 1 {
 			os.Exit(0)
