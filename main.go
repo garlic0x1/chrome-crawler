@@ -4,121 +4,57 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/url"
 	"os"
-	"strings"
 	"sync"
+	"time"
 
 	"github.com/chromedp/chromedp"
 )
 
-type link struct {
+type input struct {
+	Type  string
+	Name  string
+	Value string
+}
+
+type item struct {
 	URL   string
 	Level int
+
+	// these values are set for forms only
+	Method string
+	Inputs []input
 }
 
 // Globals
 var (
-	sm      sync.Map
-	visited sync.Map
-	REVISIT bool
-	DEPTH   int
-	SCOPE   string
-	COUNTER int
+	sm         sync.Map
+	visited    sync.Map
+	REVISIT    bool
+	DEPTH      int
+	SCOPE      string
+	COUNTER    int
+	seededRand *rand.Rand = rand.New(
+		rand.NewSource(time.Now().UnixNano()))
 )
 
 // spawns n workers listening to queue
-func spawnWorkers(n int, passctx context.Context, results chan string, queue chan link) {
+func spawnWorkers(n int, passctx context.Context, results chan string, queue chan item) {
 	for i := 0; i < n; i++ {
 		go func() {
 			// pops messages
 			for message := range queue {
-				crawl(message, passctx, results, queue)
+				if len(message.Inputs) < 1 {
+					crawl(message, passctx, results, queue)
+				} else {
+					submitForm(message, passctx, results, queue)
+				}
 			}
 		}()
 	}
-}
-
-func crawl(l link, passctx context.Context, results chan string, queue chan link) {
-	// open in a new tab
-	ctx, cancel := chromedp.NewContext(passctx)
-
-	// run task list and store in slices
-	var hrefs []string
-	var forms []string
-	err := chromedp.Run(ctx,
-		chromedp.Navigate(l.URL),
-		chromedp.Evaluate(loadFile("getlinks.js"), &hrefs),
-		chromedp.Evaluate(loadFile("getforms.js"), &forms),
-	)
-	if err != nil {
-		log.Println(err, l.URL)
-		return
-	}
-	// dont leave it open longer than we need
-	cancel()
-
-	for _, href := range hrefs {
-		ret := link{
-			URL:   href,
-			Level: l.Level + 1,
-		}
-		results <- "[href] " + ret.URL
-
-		if REVISIT {
-			if ret.Level < DEPTH && inScope(ret.URL) {
-				// increment counter for every link found so we know to not stop yet
-				COUNTER++
-				// send back to queue to be further crawled
-				queue <- ret
-			}
-		} else {
-			if ret.Level < DEPTH && inScope(ret.URL) && isUniqueURL(ret.URL) {
-				// increment counter for every link found so we know to not stop yet
-				COUNTER++
-				// send back to queue to be further crawled
-				queue <- ret
-			}
-		}
-	}
-
-	for _, f := range forms {
-		results <- "[form] " + f
-	}
-
-	// decrement counter for having looked at this link AFTER counting the child links
-	COUNTER--
-}
-
-func inScope(u string) bool {
-	return strings.Contains(u, SCOPE)
-}
-func isUnique(u string) bool {
-	_, present := sm.Load(u)
-	if present {
-		return false
-	}
-	sm.Store(u, true)
-	return true
-}
-func isUniqueURL(u string) bool {
-	_, present := visited.Load(u)
-	if present {
-		return false
-	}
-	visited.Store(u, true)
-	return true
-}
-
-// load the javascript functions
-func loadFile(filename string) string {
-	content, err := ioutil.ReadFile(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return string(content)
 }
 
 func main() {
@@ -144,12 +80,12 @@ func main() {
 		os.Exit(0)
 	}
 
-	startlink := link{
+	startlink := item{
 		URL:   *u,
 		Level: 0,
 	}
 
-	queue := make(chan link)
+	queue := make(chan item)
 	results := make(chan string)
 	COUNTER = 1
 

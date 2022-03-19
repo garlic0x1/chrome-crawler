@@ -13,8 +13,19 @@ function getForms() {
 	if (!document) return array;
 	var allElements = document.querySelectorAll("form");
 	for (var el of allElements) {
-		if (el.action && typeof el.action ==='string') {
-			array.push(absolutePath(el.action));
-		}	}
+		var inputs = []; var allIns = el.querySelectorAll("input");
+		for (var ch of allIns) {
+			inputs.push({
+					"type": ch.type,
+					"name": ch.name,
+					"value": ch.value,
+			})
+		}
+		array.push(JSON.stringify({
+			"url": absolutePath(el.action),
+			"method": el.method,
+			"inputs": inputs,	
+		}));
+	}	
 	return array;
 }
