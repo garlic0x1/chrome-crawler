@@ -36,13 +36,3 @@ func loadFile(filename string) string {
 	}
 	return string(content)
 }
-
-// returns a random alphabetical string of provided length
-func randomString(length int) string {
-	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
-	}
-	return string(b)
-}

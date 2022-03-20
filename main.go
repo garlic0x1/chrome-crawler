@@ -29,6 +29,11 @@ type item struct {
 	Inputs []input
 }
 
+type forms struct {
+	Forms  []item
+	Hashes []string
+}
+
 // Globals
 var (
 	sm         sync.Map

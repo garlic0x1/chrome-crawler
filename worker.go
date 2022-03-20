@@ -8,11 +8,6 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-type forms struct {
-	Forms  []item
-	Hashes []string
-}
-
 func crawl(l item, passctx context.Context, results chan string, queue chan item) {
 	// open in a new tab
 	ctx, cancel := chromedp.NewContext(passctx)
@@ -33,7 +28,6 @@ func crawl(l item, passctx context.Context, results chan string, queue chan item
 			log.Println(err, l.URL)
 			return
 		}
-		// dont leave it open longer than we need
 
 		for _, href := range hrefs {
 			ret := item{
@@ -60,8 +54,6 @@ func crawl(l item, passctx context.Context, results chan string, queue chan item
 		}
 
 		for _, f := range forms.Forms {
-			//	log.Println("gothere", f)
-
 			ret := item{
 				URL:    f.URL,
 				Level:  l.Level + 1,
@@ -70,7 +62,6 @@ func crawl(l item, passctx context.Context, results chan string, queue chan item
 			}
 
 			results <- "[form] " + ret.Method + " " + ret.URL
-			//queue <- ret
 		}
 		c1 <- 1
 	}()
