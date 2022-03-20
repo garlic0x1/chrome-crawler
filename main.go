@@ -33,7 +33,7 @@ type item struct {
 var (
 	sm         sync.Map
 	visited    sync.Map
-	timeout    = 15
+	timeout    = 30
 	REVISIT    bool
 	DEPTH      int
 	SCOPE      string
@@ -48,22 +48,7 @@ func spawnWorkers(n int, passctx context.Context, results chan string, queue cha
 		go func() {
 			// pops messages
 			for message := range queue {
-
-				c1 := make(chan int, 1)
-
-				go func() {
-					crawl(message, passctx, results, queue)
-					c1 <- 1
-				}()
-
-				// listen to timer and response, whichever happens first
-				select {
-				case _ = <-c1:
-					continue
-				case <-time.After(time.Duration(timeout) * time.Second):
-					COUNTER--
-					continue
-				}
+				crawl(message, passctx, results, queue)
 			}
 		}()
 	}
@@ -73,8 +58,10 @@ func main() {
 	threads := flag.Int("t", 8, "Number of chrome tabs to use concurrently")
 	depth := flag.Int("d", 2, "Depth to crawl")
 	unique := flag.Bool("uniq", false, "Show only unique URLs")
+	debug := flag.Bool("debug", true, "Don't use headless mode")
 	revisit := flag.Bool("r", false, "Revisit URLs")
 	u := flag.String("u", "", "URL to crawl")
+	proxy := flag.String("proxy", "", "Use proxy")
 	flag.Parse()
 
 	DEPTH = *depth
@@ -101,9 +88,12 @@ func main() {
 	results := make(chan string)
 	COUNTER = 1
 
-	// create context
-	ctx, cancel := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ProxyServer("http://localhost:8080"), chromedp.Flag("headless", false))...)
-	defer cancel()
+	ctx, cancel := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:], chromedp.Flag("headless", *debug))...)
+	if *proxy != "" {
+		// create context
+		ctx, cancel = chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ProxyServer(*proxy), chromedp.Flag("headless", *debug))...)
+	} else {
+	}
 	ctx, cancel = chromedp.NewContext(ctx)
 	defer cancel()
 
