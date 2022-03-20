@@ -33,6 +33,7 @@ type item struct {
 var (
 	sm         sync.Map
 	visited    sync.Map
+	timeout    = 15
 	REVISIT    bool
 	DEPTH      int
 	SCOPE      string
@@ -47,10 +48,21 @@ func spawnWorkers(n int, passctx context.Context, results chan string, queue cha
 		go func() {
 			// pops messages
 			for message := range queue {
-				if len(message.Inputs) < 1 {
+
+				c1 := make(chan int, 1)
+
+				go func() {
 					crawl(message, passctx, results, queue)
-				} else {
-					submitForm(message, passctx, results, queue)
+					c1 <- 1
+				}()
+
+				// listen to timer and response, whichever happens first
+				select {
+				case _ = <-c1:
+					continue
+				case <-time.After(time.Duration(timeout) * time.Second):
+					COUNTER--
+					continue
 				}
 			}
 		}()
@@ -90,10 +102,13 @@ func main() {
 	COUNTER = 1
 
 	// create context
-	ctx, cancel := chromedp.NewContext(context.Background())
+	ctx, cancel := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ProxyServer("http://localhost:8080"), chromedp.Flag("headless", false))...)
+	defer cancel()
+	ctx, cancel = chromedp.NewContext(ctx)
 	defer cancel()
 
-	go spawnWorkers(*threads, ctx, results, queue)
+	// start workers with their own routines
+	spawnWorkers(*threads, ctx, results, queue)
 
 	// listen to results and output them
 	go func() {

@@ -26,50 +26,60 @@ function getForms() {
 		var inputs = []; var allIns = el.querySelectorAll("input");
 		for (var ch of allIns) {
 			inputs.push({
-					"type": ch.type,
-					"name": ch.name,
-					"value": ch.value,
-			})
+					"Type": ch.type,
+					"Name": ch.name,
+					"Value": ch.value,
+			});
 		}
-		array.push(JSON.stringify({
-			"url": absolutePath(el.action),
-			"method": el.method,
-			"inputs": inputs,	
-		}));
+		array.push({
+			"URL": absolutePath(el.action),
+			"Method": el.method,
+			"Inputs": inputs,	
+		});
 	}
 
+	var hashes = []
+
 	for (var f in array) {
-		var form = JSON.parse(array[f]);
-		var data = "";
+		form = array[f];
+		var data = [];
 		var hash = makeid(8);
-		for (var i in form.inputs) {
-			input = form.inputs[i];
-			if (input.value.length > 0 || input.type == "hidden") {
-				data += "&";
-				data += input.name;
-				data += "=";
-				data += input.value;
+		hashes.push(hash);
+		for (var i in form.Inputs) {
+			input = form.Inputs[i];
+			if (input.Value.length > 0 || input.Type == "hidden") {
+				data.push("&");
+				data.push(input.Name);
+				data.push("=");
+				data.push(input.Value);
 			} else {
-				data += "&";
-				data += input.name;
-				data += "=";
-				data += hash;
+				data.push("&");
+				data.push(input.Name);
+				data.push("=");
+				data.push(hash);
 			}
 				
 		}
+		console.log(data.join(''));
 		var http = new XMLHttpRequest();
-		http.open('POST', form.url, true);
+		http.open('POST', form.URL, true);
 	
 		//Send the proper header information along with the request
 		http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
 
 		http.onreadystatechange = function() {//Call a function when the state changes.
     			if(http.readyState == 4 && http.status == 200) {
-       				alert(http.responseText);
+       				if (http.responseText.includes(hash)) {
+					alert("reflected!")
+				}
 			}
 		}
-		http.send(data);
+		http.send(data.join(''));
 	}
 
-	return array;
+	var ret = {
+		"Forms": array,
+		"Hash": hashes,
+	};
+	return ret;
 }
