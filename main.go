@@ -33,7 +33,7 @@ type item struct {
 var (
 	sm         sync.Map
 	visited    sync.Map
-	timeout    = 15
+	timeout    = 30
 	REVISIT    bool
 	DEPTH      int
 	SCOPE      string
@@ -49,21 +49,8 @@ func spawnWorkers(n int, passctx context.Context, results chan string, queue cha
 			// pops messages
 			for message := range queue {
 
-				c1 := make(chan int, 1)
+				crawl(message, passctx, results, queue)
 
-				go func() {
-					crawl(message, passctx, results, queue)
-					c1 <- 1
-				}()
-
-				// listen to timer and response, whichever happens first
-				select {
-				case _ = <-c1:
-					continue
-				case <-time.After(time.Duration(timeout) * time.Second):
-					COUNTER--
-					continue
-				}
 			}
 		}()
 	}
