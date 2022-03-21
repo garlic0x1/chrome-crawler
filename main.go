@@ -25,13 +25,10 @@ type item struct {
 	Level int
 
 	// these values are set for forms only
-	Method string
-	Inputs []input
-}
-
-type forms struct {
-	Forms  []item
-	Hashes []string
+	Method    string
+	Inputs    []input
+	Hash      string
+	Reflected string
 }
 
 // Globals
@@ -63,7 +60,7 @@ func main() {
 	threads := flag.Int("t", 8, "Number of chrome tabs to use concurrently")
 	depth := flag.Int("d", 2, "Depth to crawl")
 	unique := flag.Bool("uniq", false, "Show only unique URLs")
-	debug := flag.Bool("debug", true, "Don't use headless mode")
+	debug := flag.Bool("debug", false, "Don't use headless mode")
 	revisit := flag.Bool("r", false, "Revisit URLs")
 	u := flag.String("u", "", "URL to crawl")
 	proxy := flag.String("proxy", "", "Use proxy")
@@ -93,10 +90,10 @@ func main() {
 	results := make(chan string)
 	COUNTER = 1
 
-	ctx, cancel := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:], chromedp.Flag("headless", *debug))...)
+	ctx, cancel := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:], chromedp.Flag("headless", !*debug))...)
 	if *proxy != "" {
 		// create context
-		ctx, cancel = chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ProxyServer(*proxy), chromedp.Flag("headless", *debug))...)
+		ctx, cancel = chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:], chromedp.ProxyServer(*proxy), chromedp.Flag("headless", !*debug))...)
 	} else {
 	}
 	ctx, cancel = chromedp.NewContext(ctx)

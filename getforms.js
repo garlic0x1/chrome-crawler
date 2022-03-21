@@ -35,16 +35,15 @@ function getForms() {
 			"URL": absolutePath(el.action),
 			"Method": el.method,
 			"Inputs": inputs,	
+			"Hash": "",
+			"Reflected": "false",
 		});
 	}
-
-	var hashes = []
 
 	for (var f in array) {
 		form = array[f];
 		var data = [];
 		var hash = makeid(8);
-		hashes.push(hash);
 		for (var i in form.Inputs) {
 			input = form.Inputs[i];
 			if (input.Value.length > 0 || input.Type == "hidden") {
@@ -68,18 +67,16 @@ function getForms() {
 		http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
 
 		http.onreadystatechange = function() {//Call a function when the state changes.
-    			if(http.readyState == 4 && http.status == 200) {
+    			if (http.readyState === http.DONE) {
        				if (http.responseText.includes(hash)) {
-					alert("reflected!")
+					form.Reflected = "true";
+					alert(form.URL);
 				}
-			}
-		}
+    			}
+		};
+		form.Hash = hash;
 		http.send(data.join(''));
 	}
 
-	var ret = {
-		"Forms": array,
-		"Hash": hashes,
-	};
-	return ret;
+	return array;
 }

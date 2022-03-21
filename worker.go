@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 )
 
@@ -18,11 +19,16 @@ func crawl(l item, passctx context.Context, results chan string, queue chan item
 	go func() {
 		// run task list and store in slices
 		var hrefs []string
-		var forms forms
+		var formlist []item
+		chromedp.ListenTarget(ctx, func(ev interface{}) {
+			if ev, ok := ev.(*page.EventJavascriptDialogOpening); ok {
+				results <- "[reflected] " + ev.Message
+			}
+		})
 		err := chromedp.Run(ctx,
 			chromedp.Navigate(l.URL),
+			chromedp.Evaluate(loadFile("getforms.js"), &formlist),
 			chromedp.Evaluate(loadFile("getlinks.js"), &hrefs),
-			chromedp.Evaluate(loadFile("getforms.js"), &forms),
 		)
 		if err != nil {
 			log.Println(err, l.URL)
@@ -53,15 +59,13 @@ func crawl(l item, passctx context.Context, results chan string, queue chan item
 			}
 		}
 
-		for _, f := range forms.Forms {
-			ret := item{
-				URL:    f.URL,
-				Level:  l.Level + 1,
-				Method: f.Method,
-				Inputs: f.Inputs,
+		//log.Println(formlist)
+		for _, f := range formlist {
+			if f.Reflected == "true" {
+				results <- "[reflected] " + f.URL
 			}
 
-			results <- "[form] " + ret.Method + " " + ret.URL
+			results <- "[form] " + f.Method + " " + f.URL
 		}
 		c1 <- 1
 	}()
