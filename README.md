@@ -1,5 +1,6 @@
 # chrome-crawler
 Drives chrome headless with chromedp https://github.com/chromedp/chromedp  
+Queues links to a pool of chromium tabs and passes the browser JavaScript to scrape the page  
 
 # Installation
 Go install:  
