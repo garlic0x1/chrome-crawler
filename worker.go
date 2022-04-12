@@ -9,26 +9,27 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-func crawl(l item, passctx context.Context, results chan string, queue chan item) {
-	// open in a new tab
-	ctx, cancel := chromedp.NewContext(passctx)
-	defer cancel()
-
+func crawl(l item, ctx context.Context) {
 	c1 := make(chan int, 1)
 
 	go func() {
 		// run task list and store in slices
 		var hrefs []string
 		var formlist []item
+		var scripts []string
 		chromedp.ListenTarget(ctx, func(ev interface{}) {
 			if ev, ok := ev.(*page.EventJavascriptDialogOpening); ok {
-				results <- "[reflected] " + ev.Message
+				Results <- result{
+					Source:  "reflector",
+					Message: ev.Message,
+				}
 			}
 		})
 		err := chromedp.Run(ctx,
 			chromedp.Navigate(l.URL),
 			chromedp.Evaluate(loadFile("getforms.js"), &formlist),
 			chromedp.Evaluate(loadFile("getlinks.js"), &hrefs),
+			chromedp.Evaluate(loadFile("getscripts.js"), &scripts),
 		)
 		if err != nil {
 			log.Println(err, l.URL)
@@ -40,32 +41,48 @@ func crawl(l item, passctx context.Context, results chan string, queue chan item
 				URL:   href,
 				Level: l.Level + 1,
 			}
-			results <- "[href] " + ret.URL
+			Results <- result{
+				Source:  "href",
+				Message: ret.URL,
+			}
 
-			if REVISIT {
-				if ret.Level < DEPTH && inScope(ret.URL) {
+			if Revisit {
+				if ret.Level < Depth && inScope(ret.URL) {
 					// increment counter for every link found so we know to not stop yet
-					COUNTER++
+					Counter++
 					// send back to queue to be further crawled
-					queue <- ret
+					Queue <- ret
 				}
 			} else {
-				if ret.Level < DEPTH && inScope(ret.URL) && isUniqueURL(ret.URL) {
+				if ret.Level < Depth && inScope(ret.URL) && isUniqueURL(ret.URL) {
 					// increment counter for every link found so we know to not stop yet
-					COUNTER++
+					Counter++
 					// send back to queue to be further crawled
-					queue <- ret
+					Queue <- ret
 				}
 			}
 		}
 
-		//log.Println(formlist)
+		for _, script := range scripts {
+			Results <- result{
+				Source:  "script",
+				Message: script,
+			}
+		}
+
 		for _, f := range formlist {
 			if f.Reflected == "true" {
-				results <- "[reflected] " + f.URL
+				Results <- result{
+					Source:  "reflector",
+					Message: f.URL,
+				}
 			}
 
-			results <- "[form] " + f.Method + " " + f.URL
+			Results <- result{
+				Source:  "form",
+				Message: f.URL,
+			}
+
 		}
 		c1 <- 1
 	}()
@@ -73,10 +90,10 @@ func crawl(l item, passctx context.Context, results chan string, queue chan item
 	// listen to timer and response, whichever happens first
 	select {
 	case _ = <-c1:
-		COUNTER--
+		Counter--
 		return
 	case <-time.After(time.Duration(timeout) * time.Second):
-		COUNTER--
+		Counter--
 		return
 	}
 }

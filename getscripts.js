@@ -1,4 +1,4 @@
-getLinks();
+getScripts();
 
 function absolutePath(href) {
 	try {
@@ -8,14 +8,14 @@ function absolutePath(href) {
 	} catch (error) {}
 }
 
-function getLinks() {
+function getScripts() {
 	var array = []
 	if (!document) return array;
-	var allElements = document.querySelectorAll("*");
+	var allElements = document.querySelectorAll("script");
 	for (var el of allElements) {
-		if (el.href && typeof el.href ==='string') {
-			array.push(absolutePath(el.href));
+		if (el.src && typeof el.src === 'string') {
+			array.push(absolutePath(el.src));
 		}
 	}
-	return array;
+	return array
 }

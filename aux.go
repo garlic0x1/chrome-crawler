@@ -7,7 +7,12 @@ import (
 )
 
 func inScope(u string) bool {
-	return strings.Contains(u, SCOPE)
+	for _, host := range Scope {
+		if strings.Contains(u, host) {
+			return true
+		}
+	}
+	return false
 }
 
 func isUnique(u string) bool {
