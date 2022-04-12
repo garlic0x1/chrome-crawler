@@ -1,9 +1,22 @@
 # chrome-crawler
 Drives chrome headless with chromedp https://github.com/chromedp/chromedp  
 
+# Installation
+Go install:  
+```
+go install github.com/garlic0x1/chrome-crawler@main
+```  
+Docker install (uses default wordlist):  
+```
+git clone https://github.com/garlic0x1/chrome-crawler
+cd chrome-crawler
+sudo docker build -t "garlic0x1/chrome-crawler" .
+echo http://testphp.vulnweb.com/ | sudo docker run --rm -i garlic0x1/chrome-crawler
+```
+
 # Usage
 Single URL:  
-`echo https://google.com | chrome-crawler -s -u`  
+`echo https://example.com | chrome-crawler -s -u`  
 Multiple URLs:  
 `cat urls.txt | chrome-crawler -s -u`  
 
