@@ -36,7 +36,7 @@ func crawl(l item, ctx context.Context) {
 				Source:  "href",
 				Message: link,
 			}
-			if l.Level < Depth && inScope(link) {
+			if l.Level < Depth && inScope(link) && (Revisit || isUniqueURL(link)) {
 				Queue <- item{
 					URL:   link,
 					Level: l.Level + 1,

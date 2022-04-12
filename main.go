@@ -56,22 +56,13 @@ var (
 )
 
 func writer(unique *bool) {
-	if *unique {
-		for res := range Results {
-			if isUnique(res.Source + res.Message) {
-				if ShowSource {
-					fmt.Println("["+res.Source+"]", res.Message)
-				} else {
-					fmt.Println(res.Message)
-				}
-			}
-		}
-	}
 	for res := range Results {
-		if ShowSource {
-			fmt.Println("["+res.Source+"]", res.Message)
-		} else {
-			fmt.Println(res.Message)
+		if !(*unique) || isUnique(res.Source+res.Message) {
+			if ShowSource {
+				fmt.Println("["+res.Source+"]", res.Message)
+			} else {
+				fmt.Println(res.Message)
+			}
 		}
 	}
 }
@@ -124,10 +115,8 @@ func main() {
 	threads := flag.Int("t", 8, "Number of chrome tabs to use concurrently.")
 	depth := flag.Int("d", 2, "Depth to crawl.")
 	unique := flag.Bool("u", false, "Show only unique URLs.")
-	debug := flag.Bool("debug", false, "Don't use headless mode.")
 	revisit := flag.Bool("r", false, "Revisit URLs.")
 	showSource := flag.Bool("s", false, "Show source.")
-	//proxy := flag.String("proxy", "", "Use proxy")
 	flag.Parse()
 	ShowSource = *showSource
 	Depth = *depth
@@ -138,10 +127,9 @@ func main() {
 	Results = make(chan result)
 
 	ctx, cancel := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:],
-
 		// block all images
 		chromedp.Flag("blink-settings", "imagesEnabled=false"),
-		chromedp.Flag("headless", !*debug))...)
+		chromedp.Flag("headless", true))...)
 	defer cancel()
 	ChromeCtx, cancel = chromedp.NewContext(ctx)
 	defer cancel()
