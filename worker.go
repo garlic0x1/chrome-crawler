@@ -27,9 +27,9 @@ func crawl(l item, ctx context.Context) {
 		})
 		err := chromedp.Run(ctx,
 			chromedp.Navigate(l.URL),
-			chromedp.Evaluate(loadFile("getforms.js"), &formlist),
-			chromedp.Evaluate(loadFile("getlinks.js"), &hrefs),
-			chromedp.Evaluate(loadFile("getscripts.js"), &scripts),
+			chromedp.Evaluate(GetForms, &formlist),
+			chromedp.Evaluate(GetLinks, &hrefs),
+			chromedp.Evaluate(GetScripts, &scripts),
 		)
 		if err != nil {
 			log.Println(err, l.URL)
