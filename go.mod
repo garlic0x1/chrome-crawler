@@ -1,6 +1,6 @@
 module github.com/garlic0x1/chrome-crawler
 
-go 1.17
+go 1.18
 
 require github.com/chromedp/chromedp v0.7.8
 
