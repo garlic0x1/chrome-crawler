@@ -6,7 +6,7 @@ Go install:
 ```
 go install github.com/garlic0x1/chrome-crawler@main
 ```  
-Docker install (uses default wordlist):  
+Docker install:  
 ```
 git clone https://github.com/garlic0x1/chrome-crawler
 cd chrome-crawler
