@@ -3,7 +3,7 @@ Drives chrome headless with chromedp https://github.com/chromedp/chromedp
 Queues links to a pool of chromium tabs and scrapes pages with goquery 
 
 # Installation
-Go install:  
+Go install (Getting old version for some reason...):  
 ```
 go install github.com/garlic0x1/chrome-crawler@main
 ```  
