@@ -2,9 +2,9 @@
 Drives chrome headless with chromedp https://github.com/chromedp/chromedp  
 
 # Usage
-Single URL:
+Single URL:  
 `echo https://google.com | chrome-crawler -s -u`  
-Multiple URLs:
+Multiple URLs:  
 `cat urls.txt | chrome-crawler -s -u`  
 
 # Help
