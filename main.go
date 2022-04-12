@@ -94,7 +94,7 @@ func reader() {
 		Scope = append(Scope, parsed.Host)
 		Queue <- item{
 			URL:   u,
-			Level: 0,
+			Level: 1,
 		}
 	}
 }
@@ -137,7 +137,11 @@ func main() {
 	Queue = make(chan item)
 	Results = make(chan result)
 
-	ctx, cancel := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:], chromedp.Flag("headless", !*debug))...)
+	ctx, cancel := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:],
+
+		// block all images
+		chromedp.Flag("blink-settings", "imagesEnabled=false"),
+		chromedp.Flag("headless", !*debug))...)
 	defer cancel()
 	ChromeCtx, cancel = chromedp.NewContext(ctx)
 	defer cancel()

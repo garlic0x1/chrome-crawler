@@ -1,8 +1,8 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
+	"net/url"
 	"strings"
 )
 
@@ -33,11 +33,17 @@ func isUniqueURL(u string) bool {
 	return true
 }
 
-// load the javascript functions
-func loadFile(filename string) string {
-	content, err := ioutil.ReadFile(filename)
+func absoluteURL(parent string, u string) string {
+	parsed, err := url.Parse(parent)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
-	return string(content)
+	if strings.HasPrefix(u, "http") {
+		return u
+	} else if strings.HasPrefix(u, "//") {
+		return parsed.Scheme + ":" + u
+	} else if !(strings.HasPrefix(u, "/")) {
+		u = "/" + u
+	}
+	return parsed.Scheme + "://" + parsed.Host + u
 }
