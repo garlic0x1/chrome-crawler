@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"log"
+	"strings"
 	"time"
 
-	"github.com/chromedp/cdproto/page"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/chromedp"
 )
 
@@ -13,77 +13,54 @@ func crawl(l item, ctx context.Context) {
 	c1 := make(chan int, 1)
 
 	go func() {
-		// run task list and store in slices
-		var hrefs []string
-		var formlist []item
-		var scripts []string
-		chromedp.ListenTarget(ctx, func(ev interface{}) {
-			if ev, ok := ev.(*page.EventJavascriptDialogOpening); ok {
-				Results <- result{
-					Source:  "reflector",
-					Message: ev.Message,
-				}
-			}
-		})
+		var document string
 		err := chromedp.Run(ctx,
 			chromedp.Navigate(l.URL),
-			chromedp.Evaluate(GetForms, &formlist),
-			chromedp.Evaluate(GetLinks, &hrefs),
-			chromedp.Evaluate(GetScripts, &scripts),
+			chromedp.Evaluate("document.documentElement.innerHTML", &document),
 		)
 		if err != nil {
-			log.Println(err, l.URL)
+			c1 <- 1
 			return
 		}
 
-		for _, href := range hrefs {
-			ret := item{
-				URL:   href,
-				Level: l.Level + 1,
-			}
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(document))
+		if err != nil {
+			c1 <- 1
+			return
+		}
+
+		doc.Find("*[href]").Each(func(index int, gitem *goquery.Selection) {
+			href, _ := gitem.Attr("href")
+			link := absoluteURL(l.URL, href)
 			Results <- result{
 				Source:  "href",
-				Message: ret.URL,
+				Message: link,
 			}
-
-			if Revisit {
-				if ret.Level < Depth && inScope(ret.URL) {
-					// increment counter for every link found so we know to not stop yet
-					Counter++
-					// send back to queue to be further crawled
-					Queue <- ret
+			if l.Level < Depth && inScope(link) {
+				Queue <- item{
+					URL:   link,
+					Level: l.Level + 1,
 				}
-			} else {
-				if ret.Level < Depth && inScope(ret.URL) && isUniqueURL(ret.URL) {
-					// increment counter for every link found so we know to not stop yet
-					Counter++
-					// send back to queue to be further crawled
-					Queue <- ret
-				}
+				Counter++
 			}
-		}
+		})
 
-		for _, script := range scripts {
+		doc.Find("script[src]").Each(func(index int, gitem *goquery.Selection) {
+			src, _ := gitem.Attr("src")
 			Results <- result{
 				Source:  "script",
-				Message: script,
+				Message: absoluteURL(l.URL, src),
 			}
-		}
+		})
 
-		for _, f := range formlist {
-			if f.Reflected == "true" {
-				Results <- result{
-					Source:  "reflector",
-					Message: f.URL,
-				}
-			}
-
+		doc.Find("form").Each(func(index int, gitem *goquery.Selection) {
+			action, _ := gitem.Attr("action")
 			Results <- result{
 				Source:  "form",
-				Message: f.URL,
+				Message: absoluteURL(l.URL, action),
 			}
+		})
 
-		}
 		c1 <- 1
 	}()
 
