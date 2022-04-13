@@ -117,6 +117,7 @@ func main() {
 	unique := flag.Bool("u", false, "Show only unique URLs.")
 	revisit := flag.Bool("r", false, "Revisit URLs.")
 	showSource := flag.Bool("s", false, "Show source.")
+	debug := flag.Bool("debug", false, "Don't use headless. (slow but fun to watch)")
 	flag.Parse()
 	ShowSource = *showSource
 	Depth = *depth
@@ -129,7 +130,7 @@ func main() {
 	ctx, cancel := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:],
 		// block all images
 		chromedp.Flag("blink-settings", "imagesEnabled=false"),
-		chromedp.Flag("headless", true))...)
+		chromedp.Flag("headless", !(*debug)))...)
 	defer cancel()
 	ChromeCtx, cancel = chromedp.NewContext(ctx)
 	defer cancel()
