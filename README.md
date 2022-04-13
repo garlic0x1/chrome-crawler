@@ -25,7 +25,9 @@ Usage of chrome-crawler:
   -d int
     	Depth to crawl. (default 2)
   -debug
-    	Don't use headless mode.
+    	Don't use headless. (slow but fun to watch)
+  -proxy string
+    	Proxy URL. Example: -proxy http://127.0.0.1:8080
   -r	Revisit URLs.
   -s	Show source.
   -t int
