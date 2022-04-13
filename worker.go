@@ -16,7 +16,7 @@ func crawl(l item, ctx context.Context) {
 		var document string
 		err := chromedp.Run(ctx,
 			chromedp.Navigate(l.URL),
-			chromedp.Evaluate("document.documentElement.innerHTML", &document),
+			chromedp.Evaluate(`document.getElementsByTagName('html')[0].innerHTML;`, &document),
 		)
 		if err != nil {
 			c1 <- 1

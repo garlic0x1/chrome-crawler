@@ -118,6 +118,8 @@ func main() {
 	revisit := flag.Bool("r", false, "Revisit URLs.")
 	showSource := flag.Bool("s", false, "Show source.")
 	debug := flag.Bool("debug", false, "Don't use headless. (slow but fun to watch)")
+	proxy := flag.String(("proxy"), "", "Proxy URL. Example: -proxy http://127.0.0.1:8080")
+
 	flag.Parse()
 	ShowSource = *showSource
 	Depth = *depth
@@ -128,6 +130,7 @@ func main() {
 	Results = make(chan result)
 
 	ctx, cancel := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.ProxyServer(*proxy),
 		// block all images
 		chromedp.Flag("blink-settings", "imagesEnabled=false"),
 		chromedp.Flag("headless", !(*debug)))...)
