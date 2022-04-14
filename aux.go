@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -22,6 +23,29 @@ func oracle(doc string, u string) {
 			}
 		}
 	}
+}
+
+// parseHeaders does validation of headers input and saves it to a formatted map.
+func parseHeaders(rawHeaders string) error {
+	if rawHeaders != "" {
+		if !strings.Contains(rawHeaders, ":") {
+			return errors.New("headers flag not formatted properly (no colon to separate header and value)")
+		}
+
+		rawHeaders := strings.Split(rawHeaders, ";;")
+		for _, header := range rawHeaders {
+			var parts []string
+			if strings.Contains(header, ": ") {
+				parts = strings.SplitN(header, ": ", 2)
+			} else if strings.Contains(header, ":") {
+				parts = strings.SplitN(header, ":", 2)
+			} else {
+				continue
+			}
+			Headers[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+		}
+	}
+	return nil
 }
 
 func generateMatch(pattern string) string {
