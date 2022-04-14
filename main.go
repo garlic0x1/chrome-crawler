@@ -9,16 +9,19 @@ import (
 	"math/rand"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 )
 
 type input struct {
-	Type  string
-	Name  string
-	Value string
+	Type       string
+	Name       string
+	Value      string
+	Identifier string
 }
 
 type result struct {
@@ -27,33 +30,52 @@ type result struct {
 }
 
 type item struct {
+	Type  string
 	URL   string
 	Level int
 
 	// these values are set for forms only
-	Method    string
-	Inputs    []input
-	Hash      string
-	Reflected string
+	Location string
+	Method   string
+	Inputs   []input
 }
 
 // Globals
 var (
-	sm         sync.Map
-	visited    sync.Map
-	timeout    = 30
-	Revisit    bool
-	Depth      int
-	Scope      []string
-	Counter    int
-	ShowSource bool
-	seededRand *rand.Rand = rand.New(
+	Canary           = "http://zzx%djy"
+	sm               sync.Map
+	mu               = &sync.Mutex{}
+	Injections       = make([]item, 0)
+	Cookies          []*network.Cookie
+	visited          sync.Map
+	timeout          = 30
+	InjectionCounter = 0
+	Revisit          bool
+	Depth            int
+	Scope            []string
+	Counter          int
+	ShowSource       bool
+	seededRand       *rand.Rand = rand.New(
 		rand.NewSource(time.Now().UnixNano()))
 
 	ChromeCtx context.Context
 	Results   chan result
 	Queue     chan item
 )
+
+func oracle(doc string, u string) {
+	// check the response for injected stuff
+	for i, inj := range Injections {
+		for _, inp := range inj.Inputs {
+			if inp.Identifier != "" && strings.Contains(doc, inp.Identifier) {
+				Results <- result{
+					Source:  "reflect",
+					Message: Injections[i].URL + " -> " + u,
+				}
+			}
+		}
+	}
+}
 
 func writer(unique *bool) {
 	for res := range Results {
@@ -84,6 +106,7 @@ func reader() {
 		}
 		Scope = append(Scope, parsed.Host)
 		Queue <- item{
+			Type:  "href",
 			URL:   u,
 			Level: 1,
 		}
@@ -134,8 +157,7 @@ func main() {
 		// block all images
 		chromedp.Flag("blink-settings", "imagesEnabled=false"),
 		chromedp.Flag("headless", !(*debug)))...)
-	defer cancel()
-	ChromeCtx, cancel = chromedp.NewContext(ctx)
+	ChromeCtx = ctx
 	defer cancel()
 
 	go reader()
@@ -143,6 +165,7 @@ func main() {
 	go spawnWorkers(*threads)
 	go writer(unique)
 	for true {
+		//log.Println(Counter)
 		if Counter == 0 {
 			os.Exit(0)
 		}

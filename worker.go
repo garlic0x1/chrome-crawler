@@ -13,15 +13,27 @@ func crawl(l item, ctx context.Context) {
 	c1 := make(chan int, 1)
 
 	go func() {
-		var document string
+		// set cookies
+
 		err := chromedp.Run(ctx,
-			chromedp.Navigate(l.URL),
-			chromedp.Evaluate(`document.getElementsByTagName('html')[0].innerHTML;`, &document),
+			setCookies(),
 		)
-		if err != nil {
-			c1 <- 1
-			return
+
+		var document string
+		if l.Type == "href" {
+			err := chromedp.Run(ctx,
+				chromedp.Navigate(l.URL),
+				chromedp.Evaluate(`document.getElementsByTagName('html')[0].innerHTML;`, &document),
+			)
+			if err != nil {
+				c1 <- 1
+				return
+			}
+		} else if l.Type == "form" {
+			document = submitForm(l, ctx, c1)
 		}
+
+		oracle(document, l.URL)
 
 		doc, err := goquery.NewDocumentFromReader(strings.NewReader(document))
 		if err != nil {
@@ -38,6 +50,7 @@ func crawl(l item, ctx context.Context) {
 			}
 			if l.Level < Depth && inScope(link) && (Revisit || isUniqueURL(link)) {
 				Queue <- item{
+					Type:  "href",
 					URL:   link,
 					Level: l.Level + 1,
 				}
@@ -55,9 +68,43 @@ func crawl(l item, ctx context.Context) {
 
 		doc.Find("form").Each(func(index int, gitem *goquery.Selection) {
 			action, _ := gitem.Attr("action")
+			method, _ := gitem.Attr("method")
 			Results <- result{
 				Source:  "form",
 				Message: absoluteURL(l.URL, action),
+			}
+
+			f := item{
+				Type:     "form",
+				URL:      absoluteURL(l.URL, action),
+				Location: l.URL,
+				Level:    l.Level + 1,
+				Method:   method,
+			}
+
+			gitem.Find("textarea").Each(func(index int, ginput *goquery.Selection) {
+				name, _ := ginput.Attr("name")
+				value, _ := ginput.Attr("value")
+				flavor := "textarea"
+				f.Inputs = append(f.Inputs, input{
+					Type:  flavor,
+					Name:  name,
+					Value: value,
+				})
+			})
+			gitem.Find("input").Each(func(index int, ginput *goquery.Selection) {
+				name, _ := ginput.Attr("name")
+				value, _ := ginput.Attr("value")
+				flavor, _ := ginput.Attr("type")
+				f.Inputs = append(f.Inputs, input{
+					Type:  flavor,
+					Name:  name,
+					Value: value,
+				})
+			})
+			if l.Level < Depth && inScope(f.URL) {
+				Queue <- f
+				Counter++
 			}
 		})
 
