@@ -12,13 +12,27 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 )
 
 type input struct {
+	Type       string
+	Name       string
+	Value      string
+	Identifier string
+	Pattern    string
+}
+
+type item struct {
 	Type  string
-	Name  string
-	Value string
+	URL   string
+	Level int
+
+	// these values are set for forms only
+	Location string
+	Method   string
+	Inputs   []input
 }
 
 type result struct {
@@ -26,28 +40,23 @@ type result struct {
 	Message string
 }
 
-type item struct {
-	URL   string
-	Level int
-
-	// these values are set for forms only
-	Method    string
-	Inputs    []input
-	Hash      string
-	Reflected string
-}
-
 // Globals
 var (
-	sm         sync.Map
-	visited    sync.Map
-	timeout    = 30
-	Revisit    bool
-	Depth      int
-	Scope      []string
-	Counter    int
-	ShowSource bool
-	seededRand *rand.Rand = rand.New(
+	Passive          bool
+	Canary           = "zzx%djy"
+	sm               sync.Map
+	InjectionMap     sync.Map
+	Injections       = make([]item, 0)
+	Cookies          []*network.Cookie
+	visited          sync.Map
+	InjectionCounter = 0
+	Revisit          bool
+	Depth            int
+	Wait             int
+	Scope            []string
+	Counter          int
+	ShowSource       bool
+	seededRand       *rand.Rand = rand.New(
 		rand.NewSource(time.Now().UnixNano()))
 
 	ChromeCtx context.Context
@@ -84,6 +93,7 @@ func reader() {
 		}
 		Scope = append(Scope, parsed.Host)
 		Queue <- item{
+			Type:  "href",
 			URL:   u,
 			Level: 1,
 		}
@@ -91,7 +101,7 @@ func reader() {
 }
 
 // spawns n workers listening to queue
-func spawnWorkers(n int) {
+func spawnWorkers(n int, timeout int, done chan string) {
 	var wg sync.WaitGroup
 	for i := 0; i < n; i++ {
 		wg.Add(1)
@@ -100,7 +110,12 @@ func spawnWorkers(n int) {
 			defer cancel()
 			// pop from queue
 			for message := range Queue {
-				crawl(message, tab)
+				timedCrawl(message, tab, timeout)
+				//crawl(message, tab)
+				Counter--
+				if Counter == 0 {
+					done <- "Counter == 0"
+				}
 			}
 			wg.Done()
 		}()
@@ -112,15 +127,20 @@ func spawnWorkers(n int) {
 }
 
 func main() {
-	threads := flag.Int("t", 8, "Number of chrome tabs to use concurrently.")
+	threads := flag.Int("t", 10, "Number of chrome tabs to use concurrently.")
 	depth := flag.Int("d", 2, "Depth to crawl.")
+	wait := flag.Int("w", 1, "Seconds to wait for DOM to load. (Increase to find injections from AJAX reqs)")
 	unique := flag.Bool("u", false, "Show only unique URLs.")
 	revisit := flag.Bool("r", false, "Revisit URLs.")
 	showSource := flag.Bool("s", false, "Show source.")
+	active := flag.Bool("p", false, "Find injection points.")
 	debug := flag.Bool("debug", false, "Don't use headless. (slow but fun to watch)")
 	proxy := flag.String(("proxy"), "", "Proxy URL. Example: -proxy http://127.0.0.1:8080")
+	timeout := flag.Int("time", 10, "Timeout per request.")
 
 	flag.Parse()
+	Wait = *wait
+	Passive = !(*active)
 	ShowSource = *showSource
 	Depth = *depth
 	Revisit = *revisit
@@ -128,23 +148,21 @@ func main() {
 
 	Queue = make(chan item)
 	Results = make(chan result)
+	done := make(chan string, 1)
 
 	ctx, cancel := chromedp.NewExecAllocator(context.Background(), append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.ProxyServer(*proxy),
 		// block all images
 		chromedp.Flag("blink-settings", "imagesEnabled=false"),
 		chromedp.Flag("headless", !(*debug)))...)
-	defer cancel()
-	ChromeCtx, cancel = chromedp.NewContext(ctx)
+	ChromeCtx = ctx
 	defer cancel()
 
 	go reader()
 	// start workers with their own routines
-	go spawnWorkers(*threads)
+	go spawnWorkers(*threads, *timeout, done)
 	go writer(unique)
-	for true {
-		if Counter == 0 {
-			os.Exit(0)
-		}
-	}
+
+	_ = <-done
+	return
 }

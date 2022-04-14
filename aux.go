@@ -1,10 +1,47 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/url"
 	"strings"
+
+	"github.com/lucasjones/reggen"
 )
+
+func oracle(doc string, u string) {
+	// check the response for injected stuff
+	for i := 0; i < InjectionCounter; i++ {
+		if strings.Contains(doc, fmt.Sprintf(Canary, i)) {
+			inj, ok := getInjection(fmt.Sprintf(Canary, i))
+			if ok {
+				Results <- result{
+					Source:  "reflect",
+					Message: inj.URL + " -> " + u,
+				}
+			}
+		}
+	}
+}
+
+func generateMatch(pattern string) string {
+	// generate a single string
+	str, err := reggen.Generate(pattern, 1)
+	if err != nil {
+		panic(err)
+	}
+
+	return str
+}
+
+func addInjection(canary string, f item) {
+	InjectionMap.Store(canary, f)
+}
+
+func getInjection(canary string) (item, bool) {
+	ret, ok := InjectionMap.Load(canary)
+	return ret.(item), ok
+}
 
 func inScope(u string) bool {
 	for _, host := range Scope {
