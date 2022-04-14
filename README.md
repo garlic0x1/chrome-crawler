@@ -1,5 +1,5 @@
 # chrome-crawler
-Crawls URLs from stdin with headless chromium.  Use `-p` to enable form submission and find injection points for xss.  
+Crawls URLs from stdin with headless chromium.  Use `-p` to enable form submission and find injection points for XSS.  
 
 # Installation
 Go install from remote source is broken for some reason  
