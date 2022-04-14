@@ -73,7 +73,7 @@ func submitForm(f item, ctx context.Context, c1 chan int) string {
 
 	err = chromedp.Run(ctx,
 		chromedp.Submit(sel),
-		chromedp.Sleep(1*time.Second),
+		chromedp.Sleep(time.Duration(Wait)*time.Second),
 		// read network values
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			cookies, err := network.GetAllCookies().Do(ctx)

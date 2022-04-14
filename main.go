@@ -52,6 +52,7 @@ var (
 	InjectionCounter = 0
 	Revisit          bool
 	Depth            int
+	Wait             int
 	Scope            []string
 	Counter          int
 	ShowSource       bool
@@ -137,6 +138,7 @@ func spawnWorkers(n int) {
 func main() {
 	threads := flag.Int("t", 8, "Number of chrome tabs to use concurrently.")
 	depth := flag.Int("d", 2, "Depth to crawl.")
+	wait := flag.Int("w", 1, "Seconds to wait for DOM to load.")
 	unique := flag.Bool("u", false, "Show only unique URLs.")
 	revisit := flag.Bool("r", false, "Revisit URLs.")
 	showSource := flag.Bool("s", false, "Show source.")
@@ -144,6 +146,7 @@ func main() {
 	proxy := flag.String(("proxy"), "", "Proxy URL. Example: -proxy http://127.0.0.1:8080")
 
 	flag.Parse()
+	Wait = *wait
 	ShowSource = *showSource
 	Depth = *depth
 	Revisit = *revisit

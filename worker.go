@@ -23,6 +23,7 @@ func crawl(l item, ctx context.Context) {
 		if l.Type == "href" {
 			err := chromedp.Run(ctx,
 				chromedp.Navigate(l.URL),
+				chromedp.Sleep(time.Duration(Wait)*time.Second),
 				chromedp.Evaluate(`document.getElementsByTagName('html')[0].innerHTML;`, &document),
 			)
 			if err != nil {
