@@ -127,15 +127,15 @@ func spawnWorkers(n int, timeout int, done chan string) {
 }
 
 func main() {
+	unique := flag.Bool("u", false, "Show only unique URLs.")
+	showSource := flag.Bool("s", false, "Show source.")
 	threads := flag.Int("t", 10, "Number of chrome tabs to use concurrently.")
 	depth := flag.Int("d", 2, "Depth to crawl.")
-	wait := flag.Int("w", 1, "Seconds to wait for DOM to load. (Increase to find injections from AJAX reqs)")
-	unique := flag.Bool("u", false, "Show only unique URLs.")
 	revisit := flag.Bool("r", false, "Revisit URLs.")
-	showSource := flag.Bool("s", false, "Show source.")
+	wait := flag.Int("w", 0, "Seconds to wait for DOM to load. (Use to find injections from AJAX reqs)")
 	active := flag.Bool("p", false, "Find injection points.")
 	debug := flag.Bool("debug", false, "Don't use headless. (slow but fun to watch)")
-	proxy := flag.String(("proxy"), "", "Proxy URL. Example: -proxy http://127.0.0.1:8080")
+	proxy := flag.String("proxy", "", "Proxy URL. Example: -proxy http://127.0.0.1:8080")
 	timeout := flag.Int("time", 10, "Timeout per request.")
 
 	flag.Parse()
@@ -159,7 +159,6 @@ func main() {
 	defer cancel()
 
 	go reader()
-	// start workers with their own routines
 	go spawnWorkers(*threads, *timeout, done)
 	go writer(unique)
 
