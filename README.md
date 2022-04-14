@@ -19,15 +19,25 @@ echo http://testphp.vulnweb.com/ | sudo docker run --rm -i garlic0x1/chrome-craw
 
 # Usage
 Single URL, 4 deep, 20 tabs:  
-`echo https://example.com | chrome-crawler -u -s -d 4 -t 20`  
+```
+echo https://example.com | chrome-crawler -u -s -d 4 -t 20
+```  
 Multiple URLs, disable headless and use proxy:  
-`cat urls.txt | chrome-crawler -u -s -debug -proxy http://localhost:8080`  
+```
+cat urls.txt | chrome-crawler -u -s -debug -proxy http://localhost:8080
+```  
 Submit Forms:  
-`echo https://example.com | chrome-crawler -u -s -r -p`  
+```
+echo https://example.com | chrome-crawler -u -s -r -p
+```  
 Wait For DOM to change:  
-`echo https://example.com | chrome-crawler -u -s -r -p -w 2`  
+```
+echo https://example.com | chrome-crawler -u -s -r -p -w 2
+```  
 Example Toolchain:  
-`echo https://example.com | gau | chrome-crawler -u | url-miner -chrome -w wordlist.txt`  
+```
+echo https://example.com | gau | chrome-crawler -u | url-miner -chrome -w wordlist.txt
+```  
 
 # Help
 ```
