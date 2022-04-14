@@ -21,27 +21,24 @@ func crawl(l item, ctx context.Context) {
 
 		var document string
 		if l.Type == "href" {
-			err := chromedp.Run(ctx,
-				chromedp.Navigate(l.URL),
-				chromedp.Sleep(time.Duration(Wait)*time.Second),
-				chromedp.Evaluate(`document.getElementsByTagName('html')[0].innerHTML;`, &document),
-			)
-			if err != nil {
-				c1 <- 1
-				return
-			}
+			// navigate to URL, and evaluate response
+			document = getURL(l, ctx, c1)
 		} else if l.Type == "form" {
+			// submit form, and evaluate response
 			document = submitForm(l, ctx, c1)
 		}
 
+		// search response for our injections
 		oracle(document, l.URL)
 
+		// create goquery object to process response
 		doc, err := goquery.NewDocumentFromReader(strings.NewReader(document))
 		if err != nil {
 			c1 <- 1
 			return
 		}
 
+		// add all links to the queue
 		doc.Find("*[href]").Each(func(index int, gitem *goquery.Selection) {
 			href, _ := gitem.Attr("href")
 			link := absoluteURL(l.URL, href)
@@ -59,6 +56,7 @@ func crawl(l item, ctx context.Context) {
 			}
 		})
 
+		// display all javascript files
 		doc.Find("script[src]").Each(func(index int, gitem *goquery.Selection) {
 			src, _ := gitem.Attr("src")
 			Results <- result{
@@ -67,6 +65,7 @@ func crawl(l item, ctx context.Context) {
 			}
 		})
 
+		// add forms to queue
 		doc.Find("form").Each(func(index int, gitem *goquery.Selection) {
 			action, _ := gitem.Attr("action")
 			method, _ := gitem.Attr("method")
@@ -103,7 +102,7 @@ func crawl(l item, ctx context.Context) {
 					Value: value,
 				})
 			})
-			if l.Level < Depth && inScope(f.URL) {
+			if l.Level < Depth && inScope(f.URL) && !Passive {
 				Queue <- f
 				Counter++
 			}

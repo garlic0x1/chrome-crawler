@@ -9,7 +9,6 @@ import (
 	"math/rand"
 	"net/url"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -42,6 +41,7 @@ type item struct {
 
 // Globals
 var (
+	Passive          bool
 	Canary           = "http://zzx%djy"
 	sm               sync.Map
 	mu               = &sync.Mutex{}
@@ -63,20 +63,6 @@ var (
 	Results   chan result
 	Queue     chan item
 )
-
-func oracle(doc string, u string) {
-	// check the response for injected stuff
-	for i, inj := range Injections {
-		for _, inp := range inj.Inputs {
-			if inp.Identifier != "" && strings.Contains(doc, inp.Identifier) {
-				Results <- result{
-					Source:  "reflect",
-					Message: Injections[i].URL + " -> " + u,
-				}
-			}
-		}
-	}
-}
 
 func writer(unique *bool) {
 	for res := range Results {
@@ -142,11 +128,13 @@ func main() {
 	unique := flag.Bool("u", false, "Show only unique URLs.")
 	revisit := flag.Bool("r", false, "Revisit URLs.")
 	showSource := flag.Bool("s", false, "Show source.")
+	passive := flag.Bool("p", false, "Passive crawl, no POSTs.")
 	debug := flag.Bool("debug", false, "Don't use headless. (slow but fun to watch)")
 	proxy := flag.String(("proxy"), "", "Proxy URL. Example: -proxy http://127.0.0.1:8080")
 
 	flag.Parse()
 	Wait = *wait
+	Passive = *passive
 	ShowSource = *showSource
 	Depth = *depth
 	Revisit = *revisit
