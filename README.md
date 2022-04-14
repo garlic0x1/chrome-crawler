@@ -26,15 +26,15 @@ Multiple URLs, disable headless and use proxy:
 ```
 cat urls.txt | chrome-crawler -u -s -debug -proxy http://localhost:8080
 ```  
-Submit Forms:  
+Submit forms with header:  
 ```
-echo https://example.com | chrome-crawler -u -s -r -p
+echo https://example.com | chrome-crawler -u -s -r -p -head "Cookie: foo=bar;;Referer: http://example.com/"
 ```  
-Wait For DOM to change:  
+Wait for DOM to change:  
 ```
 echo https://example.com | chrome-crawler -u -s -r -p -w 2
 ```  
-Example Toolchain:  
+Example toolchain:  
 ```
 echo https://example.com | gau | chrome-crawler -u | url-miner -chrome -w wordlist.txt
 ```  
@@ -47,6 +47,8 @@ Usage of chrome-crawler:
     	Depth to crawl. (default 2)
   -debug
     	Don't use headless. (slow but fun to watch)
+  -head string
+    	Custom headers separated by two semi-colons. Example: -head 'Cookie: foo=bar;;Referer: http://example.com/'
   -p	Find injection points.
   -proxy string
     	Proxy URL. Example: -proxy http://127.0.0.1:8080
@@ -59,4 +61,5 @@ Usage of chrome-crawler:
   -u	Show only unique URLs.
   -w int
     	Seconds to wait for DOM to load. (Use to find injections from AJAX reqs)
+
 ```
