@@ -46,6 +46,7 @@ var (
 	Canary           = "zzx%djy"
 	sm               sync.Map
 	InjectionMap     sync.Map
+	Headers          = make(map[string]interface{})
 	Injections       = make([]item, 0)
 	Cookies          []*network.Cookie
 	visited          sync.Map
@@ -134,6 +135,7 @@ func main() {
 	revisit := flag.Bool("r", false, "Revisit URLs.")
 	wait := flag.Int("w", 0, "Seconds to wait for DOM to load. (Use to find injections from AJAX reqs)")
 	active := flag.Bool("p", false, "Find injection points.")
+	cheaders := flag.String("head", "", "Custom headers separated by two semi-colons. Example: -h 'Cookie: foo=bar;;Referer: http://example.com/'")
 	debug := flag.Bool("debug", false, "Don't use headless. (slow but fun to watch)")
 	proxy := flag.String("proxy", "", "Proxy URL. Example: -proxy http://127.0.0.1:8080")
 	timeout := flag.Int("time", 10, "Timeout per request.")
@@ -145,6 +147,12 @@ func main() {
 	Depth = *depth
 	Revisit = *revisit
 	Counter = -1
+
+	err := parseHeaders(*cheaders)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error parsing headers:", err)
+		os.Exit(1)
+	}
 
 	Queue = make(chan item)
 	Results = make(chan result)

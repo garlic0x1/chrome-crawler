@@ -15,8 +15,10 @@ func getURL(l item, ctx context.Context) string {
 	parsed, _ := url.Parse(l.URL)
 	var doc string
 	err := chromedp.Run(ctx,
-		chromedp.Navigate(l.URL),
+		network.Enable(),
+		network.SetExtraHTTPHeaders(network.Headers(Headers)),
 		setCookies(parsed.Host),
+		chromedp.Navigate(l.URL),
 		chromedp.Sleep(time.Duration(Wait)*time.Second),
 		//chromedp.Evaluate(`document.documentElement.outerHTML;`, &doc),
 		chromedp.OuterHTML(`html`, &doc),
@@ -32,8 +34,10 @@ func submitForm(f item, ctx context.Context) string {
 	parsed, _ := url.Parse(f.URL)
 	var doc string
 	err := chromedp.Run(ctx,
-		chromedp.Navigate(f.Location),
+		network.Enable(),
+		network.SetExtraHTTPHeaders(network.Headers(Headers)),
 		setCookies(parsed.Host),
+		chromedp.Navigate(f.Location),
 	)
 	if err != nil {
 		log.Println("Error setting cookies:", err)
