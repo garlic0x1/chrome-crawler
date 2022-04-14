@@ -3,6 +3,12 @@ Crawls URLs from stdin with headless chromium.  Use `-p` to enable form submissi
 
 # Installation
 Go install is broken for some reason  
+From Source:  
+```
+git clone https://github.com/garlic0x1/chrome-crawler
+cd chrome-crawler
+go install .
+```
 Docker install:  
 ```
 git clone https://github.com/garlic0x1/chrome-crawler
@@ -12,14 +18,16 @@ echo http://testphp.vulnweb.com/ | sudo docker run --rm -i garlic0x1/chrome-craw
 ```
 
 # Usage
-Single URL, 4 deep:  
-`echo https://example.com | chrome-crawler -u -s -d 4`  
-Multiple URLs:  
-`cat urls.txt | chrome-crawler -s -u`  
+Single URL, 4 deep, 20 tabs:  
+`echo https://example.com | chrome-crawler -u -s -d 4 -t 20`  
+Multiple URLs, disable headless and use proxy:  
+`cat urls.txt | chrome-crawler -u -s -debug -proxy http://localhost:8080`  
 Submit Forms:  
 `echo https://example.com | chrome-crawler -u -s -r -p`  
 Wait For DOM to change:  
 `echo https://example.com | chrome-crawler -u -s -r -p -w 2`  
+Example Toolchain:  
+`echo https://example.com | gau | chrome-crawler -u | url-miner -chrome -w wordlist.txt`  
 
 # Help
 ```
