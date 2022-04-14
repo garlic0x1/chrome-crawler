@@ -1,5 +1,5 @@
 # chrome-crawler
-Crawls URLs from stdin with headless chromium.  Use `-p` to enable form submission and find injection points for XSS.  
+Crawls URLs from stdin with headless chromium. Performs a passive crawl by default, but with `-p` flag it fills out forms and searches for reflected inputs  
 
 # Installation
 Go install from remote source is broken for some reason  
