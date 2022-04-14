@@ -2,7 +2,7 @@
 Crawls URLs from stdin with headless chromium.  Use `-p` to enable form submission and find injection points for xss.  
 
 # Installation
-Go install is broken for some reason  
+Go install from remote source is broken for some reason  
 From Source:  
 ```
 git clone https://github.com/garlic0x1/chrome-crawler
