@@ -6,19 +6,12 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/chromedp/chromedp"
 )
 
 func crawl(l item, ctx context.Context) {
 	c1 := make(chan int, 1)
 
 	go func() {
-		// set cookies
-
-		err := chromedp.Run(ctx,
-			setCookies(),
-		)
-
 		var document string
 		if l.Type == "href" {
 			// navigate to URL, and evaluate response

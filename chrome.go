@@ -13,6 +13,7 @@ import (
 func getURL(l item, ctx context.Context, c1 chan int) string {
 	var doc string
 	err := chromedp.Run(ctx,
+		setCookies(),
 		chromedp.Navigate(l.URL),
 		chromedp.Sleep(time.Duration(Wait)*time.Second),
 		chromedp.Evaluate(`try { document.documentElement.outerHTML; } catch { "" }`, &doc),
@@ -29,6 +30,7 @@ func submitForm(f item, ctx context.Context, c1 chan int) string {
 
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(f.Location),
+		setCookies,
 	)
 	if err != nil {
 		log.Println(err)
