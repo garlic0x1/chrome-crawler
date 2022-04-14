@@ -128,13 +128,13 @@ func main() {
 	unique := flag.Bool("u", false, "Show only unique URLs.")
 	revisit := flag.Bool("r", false, "Revisit URLs.")
 	showSource := flag.Bool("s", false, "Show source.")
-	passive := flag.Bool("p", false, "Passive crawl, no POSTs.")
+	active := flag.Bool("p", false, "Find injection points.")
 	debug := flag.Bool("debug", false, "Don't use headless. (slow but fun to watch)")
 	proxy := flag.String(("proxy"), "", "Proxy URL. Example: -proxy http://127.0.0.1:8080")
 
 	flag.Parse()
 	Wait = *wait
-	Passive = *passive
+	Passive = !(*active)
 	ShowSource = *showSource
 	Depth = *depth
 	Revisit = *revisit
