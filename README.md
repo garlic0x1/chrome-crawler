@@ -24,7 +24,7 @@ echo https://example.com | chrome-crawler -u -s -d 4 -t 20
 ```  
 Multiple URLs, disable headless and use proxy:  
 ```
-cat urls.txt | chrome-crawler -u -s -debug -proxy http://localhost:8080
+cat urls.txt | chrome-crawler -u -s -debug-chrome -proxy http://localhost:8080
 ```  
 Submit forms with header:  
 ```
@@ -46,9 +46,11 @@ Usage of chrome-crawler:
   -d int
     	Depth to crawl. (default 2)
   -debug
+    	Display error messages.
+  -debug-chrome
     	Don't use headless. (slow but fun to watch)
   -head string
-    	Custom headers separated by two semi-colons. Example: -head 'Cookie: foo=bar;;Referer: http://example.com/'
+    	Custom headers separated by two semi-colons. Example: -h 'Cookie: foo=bar;;Referer: http://example.com/'
   -p	Find injection points.
   -proxy string
     	Proxy URL. Example: -proxy http://127.0.0.1:8080
@@ -61,5 +63,6 @@ Usage of chrome-crawler:
   -u	Show only unique URLs.
   -w int
     	Seconds to wait for DOM to load. (Use to find injections from AJAX reqs)
+
 
 ```
