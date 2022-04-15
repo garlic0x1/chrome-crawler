@@ -36,9 +36,15 @@ func filterImages(u string) bool {
 		".css",
 	}
 
-	parsed, _ := url.Parse(u)
+	parsed, err := url.Parse(u)
+	if err != nil {
+		if Debug {
+			log.Println(err)
+		}
+		return false
+	}
 	for _, str := range filters {
-		if strings.HasSuffix(parsed.Path, str) {
+		if strings.Contains(parsed.Path, str) {
 			return false
 		}
 	}

@@ -95,6 +95,7 @@ func crawl(l item, ctx context.Context) {
 	// add all links to the queue
 	doc.Find("*[href]").Each(func(index int, gitem *goquery.Selection) {
 		href, _ := gitem.Attr("href")
+		href = strings.TrimSpace(href)
 		link := absoluteURL(l.URL, href)
 		Results <- result{
 			Source:  "href",
