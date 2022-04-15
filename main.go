@@ -42,6 +42,7 @@ type result struct {
 
 // Globals
 var (
+	Debug            bool
 	Passive          bool
 	Canary           = "zzx%djy"
 	sm               sync.Map
@@ -89,7 +90,7 @@ func reader() {
 		}
 		// parse link to determine scope
 		parsed, err := url.Parse(u)
-		if err != nil {
+		if err != nil && Debug {
 			log.Println("failed to parse url", u, err)
 		}
 		Scope = append(Scope, parsed.Host)
@@ -136,12 +137,14 @@ func main() {
 	wait := flag.Int("w", 0, "Seconds to wait for DOM to load. (Use to find injections from AJAX reqs)")
 	active := flag.Bool("p", false, "Find injection points.")
 	cheaders := flag.String("head", "", "Custom headers separated by two semi-colons. Example: -h 'Cookie: foo=bar;;Referer: http://example.com/'")
-	debug := flag.Bool("debug", false, "Don't use headless. (slow but fun to watch)")
+	debugChrome := flag.Bool("debug-chrome", false, "Don't use headless. (slow but fun to watch)")
+	debug := flag.Bool("debug", false, "Display error messages.")
 	proxy := flag.String("proxy", "", "Proxy URL. Example: -proxy http://127.0.0.1:8080")
 	timeout := flag.Int("time", 10, "Timeout per request.")
 
 	flag.Parse()
 	Wait = *wait
+	Debug = *debug
 	Passive = !(*active)
 	ShowSource = *showSource
 	Depth = *depth
@@ -162,7 +165,7 @@ func main() {
 		chromedp.ProxyServer(*proxy),
 		// block all images
 		chromedp.Flag("blink-settings", "imagesEnabled=false"),
-		chromedp.Flag("headless", !(*debug)))...)
+		chromedp.Flag("headless", !(*debugChrome)))...)
 	ChromeCtx = ctx
 	defer cancel()
 
