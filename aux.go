@@ -44,7 +44,7 @@ func filterImages(u string) bool {
 		return false
 	}
 	for _, str := range filters {
-		if strings.Contains(parsed.Path, str) {
+		if strings.HasSuffix(parsed.Path, str) {
 			return false
 		}
 	}
