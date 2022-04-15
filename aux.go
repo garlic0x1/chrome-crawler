@@ -25,6 +25,26 @@ func oracle(doc string, u string) {
 	}
 }
 
+func filterImages(u string) bool {
+
+	filters := []string{
+		".jpg",
+		".png",
+		".jpeg",
+		".ico",
+		".pdf",
+		".css",
+	}
+
+	parsed, _ := url.Parse(u)
+	for _, str := range filters {
+		if strings.HasSuffix(parsed.Path, str) {
+			return false
+		}
+	}
+	return true
+}
+
 // parseHeaders does validation of headers input and saves it to a formatted map.
 func parseHeaders(rawHeaders string) error {
 	if rawHeaders != "" {

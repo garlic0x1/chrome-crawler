@@ -24,7 +24,9 @@ func getURL(l item, ctx context.Context) string {
 		chromedp.OuterHTML(`html`, &doc),
 	)
 	if err != nil {
-		log.Println(l, err)
+		if Debug {
+			log.Println(l, err)
+		}
 		return ""
 	}
 	return doc
@@ -40,7 +42,9 @@ func submitForm(f item, ctx context.Context) string {
 		chromedp.Navigate(f.Location),
 	)
 	if err != nil {
-		log.Println("Error setting cookies:", err)
+		if Debug {
+			log.Println("Error setting cookies:", err)
+		}
 		return ""
 	}
 
@@ -76,7 +80,9 @@ func submitForm(f item, ctx context.Context) string {
 				chromedp.SendKeys(sel, q),
 			)
 			if err != nil {
-				log.Println("Error sending keys:", sel, q, err)
+				if Debug {
+					log.Println("Error sending keys:", sel, q, err)
+				}
 				return ""
 			}
 		}
@@ -90,7 +96,9 @@ func submitForm(f item, ctx context.Context) string {
 		chromedp.OuterHTML(`html`, &doc),
 	)
 	if err != nil {
-		log.Println("Error submitting form:", f, err)
+		if Debug {
+			log.Println("Error submitting form:", f, err)
+		}
 		return ""
 	}
 

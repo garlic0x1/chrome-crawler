@@ -41,7 +41,9 @@ func crawl(l item, ctx context.Context) {
 	// create goquery object to process response
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(document))
 	if err != nil {
-		log.Println(err)
+		if Debug {
+			log.Println(err)
+		}
 		return
 	}
 
@@ -98,7 +100,7 @@ func crawl(l item, ctx context.Context) {
 			Source:  "href",
 			Message: link,
 		}
-		if l.Level < Depth && inScope(link) && (Revisit || isUniqueURL(link)) {
+		if l.Level < Depth && inScope(link) && (Revisit || isUniqueURL(link)) && filterImages(href) {
 			Queue <- item{
 				Type:  "href",
 				URL:   link,
