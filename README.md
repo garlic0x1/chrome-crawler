@@ -38,6 +38,32 @@ Example toolchain:
 ```
 echo https://example.com | gau | chrome-crawler -u | url-miner -chrome -w wordlist.txt
 ```  
+Example output:
+```
+$ echo https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/ | chrome-crawler -s -u -d 3 -p -r -w 1
+[href] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/resources/labheader/css/academyLabHeader.css
+[href] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/resources/css/labsBlog.css
+[href] https://portswigger.net/web-security/cross-site-scripting/dom-based/lab-dom-xss-stored
+[href] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/
+...
+[href] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/post?postId=1
+[form] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/post/comment
+[href] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/post?postId=7
+[script] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/resources/labheader/js/labHeader.js
+[href] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/post?postId=3
+[href] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/post?postId=8
+[href] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/post?postId=6
+[href] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/post?postId=5
+...
+[reflect] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/post/comment -> https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/post?postId=1
+[reflect] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/post/comment -> https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/post?postId=10
+[script] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/resources/js/loadCommentsWithVulnerableEscapeHtml.js
+[href] https:Ezzx35jy
+...
+[href] https:=zzx35jy
+[reflect] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/post/comment -> https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/post?postId=2
+...
+```
 
 # Help
 ```
