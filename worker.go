@@ -52,8 +52,8 @@ func crawl(l item, ctx context.Context) {
 		action, _ := gitem.Attr("action")
 		method, _ := gitem.Attr("method")
 		Results <- result{
-			Source:  "form",
-			Message: absoluteURL(l.URL, action),
+			Type: "form",
+			URL:  absoluteURL(l.URL, action),
 		}
 
 		f := item{
@@ -98,8 +98,8 @@ func crawl(l item, ctx context.Context) {
 		href = strings.TrimSpace(href)
 		link := absoluteURL(l.URL, href)
 		Results <- result{
-			Source:  "href",
-			Message: link,
+			Type: "href",
+			URL:  link,
 		}
 		if l.Level < Depth && inScope(link) && (Revisit || isUniqueURL(link)) && filterImages(href) {
 			Queue <- item{
@@ -115,8 +115,8 @@ func crawl(l item, ctx context.Context) {
 	doc.Find("script[src]").Each(func(index int, gitem *goquery.Selection) {
 		src, _ := gitem.Attr("src")
 		Results <- result{
-			Source:  "script",
-			Message: absoluteURL(l.URL, src),
+			Type: "script",
+			URL:  absoluteURL(l.URL, src),
 		}
 	})
 }
