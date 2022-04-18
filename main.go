@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
+	"gopkg.in/yaml.v2"
 )
 
 type input struct {
@@ -36,8 +38,9 @@ type item struct {
 }
 
 type result struct {
-	Source  string
-	Message string
+	Type      string
+	URL       string
+	Injection item
 }
 
 // Globals
@@ -66,13 +69,34 @@ var (
 	Queue     chan item
 )
 
-func writer(unique *bool) {
+func writer(unique *bool, pjson *bool, pyaml *bool) {
 	for res := range Results {
-		if !(*unique) || isUnique(res.Source+res.Message) {
-			if ShowSource {
-				fmt.Println("["+res.Source+"]", res.Message)
-			} else {
-				fmt.Println(res.Message)
+		if !(*unique) || isUnique(res.Type+res.URL+res.Injection.URL) {
+			switch {
+			case *pjson:
+				b, err := json.Marshal(res)
+				if err != nil {
+					log.Println("Error:", err)
+					continue
+				}
+				fmt.Println(string(b))
+			case *pyaml:
+				b, err := yaml.Marshal(res)
+				if err != nil {
+					log.Println("Error:", err)
+					continue
+				}
+				fmt.Println(string(b))
+			case !*pjson && !*pyaml:
+				str := ""
+				if res.Type == "reflect" {
+					str += res.Injection.URL + " -> "
+				}
+				if ShowSource {
+					fmt.Println("["+res.Type+"]", str+res.URL)
+				} else {
+					fmt.Println(str + res.URL)
+				}
 			}
 		}
 	}
@@ -130,6 +154,8 @@ func spawnWorkers(n int, timeout int, done chan string) {
 
 func main() {
 	unique := flag.Bool("u", false, "Show only unique URLs.")
+	Json := flag.Bool("json", false, "Output as JSON.")
+	Yaml := flag.Bool("yaml", false, "Output as YAML.")
 	showSource := flag.Bool("s", false, "Show source.")
 	threads := flag.Int("t", 10, "Number of chrome tabs to use concurrently.")
 	depth := flag.Int("d", 2, "Depth to crawl.")
@@ -171,7 +197,7 @@ func main() {
 
 	go reader()
 	go spawnWorkers(*threads, *timeout, done)
-	go writer(unique)
+	go writer(unique, Json, Yaml)
 
 	_ = <-done
 	return

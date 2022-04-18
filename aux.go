@@ -17,8 +17,9 @@ func oracle(doc string, u string) {
 			inj, ok := getInjection(fmt.Sprintf(Canary, i))
 			if ok {
 				Results <- result{
-					Source:  "reflect",
-					Message: inj.URL + " -> " + u,
+					Type:      "reflect",
+					URL:       u,
+					Injection: inj,
 				}
 			}
 		}
