@@ -1,5 +1,6 @@
 # chrome-crawler
 Crawls URLs from stdin with headless chromium. Performs a passive crawl by default, but with `-p` flag it fills out forms and searches for reflected inputs  
+Output structured data with `-json` or `-yaml`  
 
 # Installation
 Go install from remote source is broken for some reason  
@@ -77,6 +78,8 @@ Usage of chrome-crawler:
     	Don't use headless. (slow but fun to watch)
   -head string
     	Custom headers separated by two semi-colons. Example: -h 'Cookie: foo=bar;;Referer: http://example.com/'
+  -json
+    	Output as JSON.
   -p	Find injection points.
   -proxy string
     	Proxy URL. Example: -proxy http://127.0.0.1:8080
@@ -89,6 +92,6 @@ Usage of chrome-crawler:
   -u	Show only unique URLs.
   -w int
     	Seconds to wait for DOM to load. (Use to find injections from AJAX reqs)
-
-
+  -yaml
+    	Output as YAML.
 ```
