@@ -38,7 +38,7 @@ Example toolchain:
 ```
 echo https://example.com | gau | chrome-crawler -u | url-miner -chrome -w wordlist.txt
 ```  
-Example output:
+Example output on https://portswigger.net/web-security/cross-site-scripting/dom-based/lab-dom-xss-stored:
 ```
 $ echo https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/ | chrome-crawler -s -u -d 3 -p -r -w 1
 [href] https://acc71ffe1f561697c0e5040100190092.web-security-academy.net/resources/labheader/css/academyLabHeader.css
