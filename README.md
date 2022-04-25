@@ -3,12 +3,9 @@ Crawls URLs from stdin with headless chromium. Performs a passive crawl by defau
 Output structured data with `-json` or `-yaml`  
 
 # Installation
-Go install from remote source is broken for some reason  
-From Source:  
+Go install:
 ```
-git clone https://github.com/garlic0x1/chrome-crawler
-cd chrome-crawler
-go install .
+go install github.com/garlic0x1/chrome-crawler@main
 ```
 Docker install:  
 ```
